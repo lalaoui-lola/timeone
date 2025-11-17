@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Modal</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    <link rel="stylesheet" href="lead-modal.css">
+</head>
+<body style="padding: 2rem; background: #1a1a2e;">
+    <h1 style="color: white;">Test de la Modale</h1>
+    
+    <div style="margin: 2rem 0;">
+        <label style="color: white;">ID du Lead:</label>
+        <input type="text" id="leadIdInput" placeholder="Entrez l'ID du lead" style="padding: 0.5rem; margin: 0 1rem;">
+        <button onclick="testModal()" style="padding: 0.5rem 1rem; background: #f7c7bb; border: none; border-radius: 8px; cursor: pointer;">
+            Ouvrir Modal (Lecture)
+        </button>
+        <button onclick="testModalEdit()" style="padding: 0.5rem 1rem; background: #60a5fa; border: none; border-radius: 8px; cursor: pointer; margin-left: 0.5rem;">
+            Ouvrir Modal (Édition)
+        </button>
+    </div>
+    
+    <div id="debugInfo" style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; color: white; margin-top: 2rem;">
+        <h3>Debug Info:</h3>
+        <pre id="debugOutput"></pre>
+    </div>
+    
+    <!-- Lead Details Modal Container -->
+    <div id="leadModal"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="lead-modal.js"></script>
+    
+    <script>
+        async function testModal() {
+            const leadId = document.getElementById('leadIdInput').value;
+            if (!leadId) {
+                alert('Veuillez entrer un ID de lead');
+                return;
+            }
+            
+            logDebug('Test ouverture modal en lecture...');
+            logDebug('Lead ID: ' + leadId);
+            
+            try {
+                await openLeadModal(leadId, false);
+                logDebug('✅ Modal ouverte avec succès');
+            } catch (error) {
+                logDebug('❌ Erreur: ' + error.message);
+                console.error(error);
+            }
+        }
+        
+        async function testModalEdit() {
+            const leadId = document.getElementById('leadIdInput').value;
+            if (!leadId) {
+                alert('Veuillez entrer un ID de lead');
+                return;
+            }
+            
+            logDebug('Test ouverture modal en édition...');
+            logDebug('Lead ID: ' + leadId);
+            
+            try {
+                await openLeadModal(leadId, true);
+                logDebug('✅ Modal ouverte avec succès (mode édition)');
+            } catch (error) {
+                logDebug('❌ Erreur: ' + error.message);
+                console.error(error);
+            }
+        }
+        
+        function logDebug(message) {
+            const output = document.getElementById('debugOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n`;
+        }
+        
+        // Test initial
+        window.addEventListener('DOMContentLoaded', async () => {
+            logDebug('Page chargée');
+            logDebug('Supabase défini: ' + (typeof supabase !== 'undefined'));
+            
+            if (typeof supabase !== 'undefined') {
+                const { data: { session } } = await supabase.auth.getSession();
+                logDebug('Session: ' + (session ? '✅ Connecté' : '❌ Non connecté'));
+                
+                if (session) {
+                    logDebug('User ID: ' + session.user.id);
+                    
+                    // Get user role
+                    const { data: profile } = await supabase
+                        .from('user_profiles')
+                        .select('role, email')
+                        .eq('user_id', session.user.id)
+                        .single();
+                    
+                    if (profile) {
+                        logDebug('Role: ' + profile.role);
+                        logDebug('Email: ' + profile.email);
+                    }
+                    
+                    // Get first lead
+                    const { data: leads } = await supabase
+                        .from('project_responses')
+                        .select('id')
+                        .limit(1);
+                    
+                    if (leads && leads.length > 0) {
+                        document.getElementById('leadIdInput').value = leads[0].id;
+                        logDebug('Premier lead trouvé: ' + leads[0].id);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

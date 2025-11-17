@@ -1,0 +1,785 @@
+/* Reset et variables CSS */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --color-primary: #F7C7BB;
+    --color-secondary: #175C64;
+    --color-light: #EEF2F2;
+    --color-dark: #0E3A40;
+    --color-darker: #0a2428;
+    --gradient-primary: linear-gradient(135deg, #F7C7BB 0%, #175C64 100%);
+    --gradient-secondary: linear-gradient(135deg, #175C64 0%, #0E3A40 100%);
+    --gradient-bg: linear-gradient(135deg, #FFF8EC 0%, rgba(247, 199, 187, 0.45) 40%, #EEF2F2 100%);
+    --glass-bg: rgba(255, 255, 255, 0.96);
+    --glass-border: rgba(247, 199, 187, 0.28);
+    --shadow-glass: 0 22px 58px rgba(247, 199, 187, 0.22);
+    --shadow-glow: 0 0 45px rgba(23, 92, 100, 0.15);
+    --border-radius: 20px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gradient-bg);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+    color: var(--color-dark);
+}
+
+/* Effet de particules en arrière-plan */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 20% 50%, rgba(247, 199, 187, 0.4) 0%, transparent 65%),
+        radial-gradient(circle at 80% 20%, rgba(238, 242, 242, 0.7) 0%, transparent 70%),
+        radial-gradient(circle at 40% 80%, rgba(23, 92, 100, 0.16) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+    animation: backgroundPulse 15s ease-in-out infinite;
+}
+
+@keyframes backgroundPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* Container principal */
+.auth-container {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+}
+
+/* Section Animation (Gauche) */
+.animation-section {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(247, 199, 187, 0.32) 0%, rgba(255, 248, 236, 0.95) 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.animation-container {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#login-animation {
+    width: 400px;
+    height: 400px;
+    position: relative;
+    z-index: 2;
+}
+
+/* Éléments flottants */
+.floating-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.floating-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(247, 199, 187, 0.7) 0%, rgba(255, 248, 236, 0.6) 100%);
+    opacity: 0.22;
+    animation: float 6s ease-in-out infinite;
+}
+
+.circle-1 {
+    width: 80px;
+    height: 80px;
+    top: 10%;
+    left: 20%;
+    animation-delay: 0s;
+}
+
+.circle-2 {
+    width: 120px;
+    height: 120px;
+    top: 60%;
+    right: 15%;
+    animation-delay: 2s;
+}
+
+.circle-3 {
+    width: 60px;
+    height: 60px;
+    bottom: 20%;
+    left: 10%;
+    animation-delay: 4s;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+        opacity: 0.1;
+    }
+    50% {
+        transform: translateY(-20px) rotate(180deg);
+        opacity: 0.2;
+    }
+}
+
+/* Section Formulaire (Droite) - Glassmorphism Dark */
+.form-section {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass), var(--shadow-glow);
+    position: relative;
+    overflow: hidden;
+}
+
+.form-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(247, 199, 187, 0.4) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: float 20s ease-in-out infinite;
+    z-index: 0;
+}
+
+.form-section::after {
+    content: '';
+    position: absolute;
+    bottom: -50%;
+    left: -50%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(23, 92, 100, 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: float 25s ease-in-out infinite reverse;
+    z-index: 0;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+    animation: scaleIn 0.5s ease-out;
+    color: var(--color-dark);
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Header du formulaire */
+.form-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    animation: fadeInUp 0.6s ease;
+}
+
+.logo-container {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeInDown 0.8s ease;
+}
+
+.login-logo {
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 30px rgba(247, 199, 187, 0.4));
+    transition: all 0.3s ease;
+}
+
+.login-logo:hover {
+    transform: scale(1.08);
+    filter: drop-shadow(0 8px 35px rgba(247, 199, 187, 0.6));
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+    animation: slideInFromTop 0.6s ease-out;
+    text-shadow: 0 0 30px rgba(247, 199, 187, 0.5);
+}
+
+.form-subtitle {
+    font-size: 1.1rem;
+    color: rgba(14, 58, 64, 0.85);
+    font-weight: 400;
+    animation: fadeIn 1s ease-out 0.3s both;
+}
+
+/* Groupes de formulaire */
+.form-group {
+    margin-bottom: 1.5rem;
+    animation: slideInFromLeft 0.6s ease-out;
+    animation-fill-mode: both;
+}
+
+.form-group:nth-child(1) {
+    animation-delay: 0.4s;
+}
+
+.form-group:nth-child(2) {
+    animation-delay: 0.5s;
+}
+
+.input-container {
+    position: relative;
+    width: 100%;
+}
+
+.form-input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3.5rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--color-dark);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    box-shadow: inset 0 0 12px rgba(14, 58, 64, 0.05);
+}
+
+.form-input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(247, 199, 187, 0.25), 0 12px 24px rgba(23, 92, 100, 0.08), inset 0 0 14px rgba(14, 58, 64, 0.08);
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-2px);
+}
+
+.form-input:focus + .form-label,
+.form-input:not(:placeholder-shown) + .form-label {
+    transform: translateY(-2.5rem) scale(0.85);
+    color: var(--color-secondary);
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(247, 199, 187, 0.35);
+}
+
+.form-label {
+    position: absolute;
+    left: 3.5rem;
+    top: 1rem;
+    font-size: 1rem;
+    color: rgba(14, 58, 64, 0.7);
+    transition: var(--transition);
+    pointer-events: none;
+    background: transparent;
+    padding: 0 0.25rem;
+    z-index: 1;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(14, 58, 64, 0.65);
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.form-input:focus ~ .input-icon {
+    color: var(--color-secondary);
+    transform: translateY(-50%) scale(1.1);
+    filter: drop-shadow(0 0 8px rgba(23, 92, 100, 0.25));
+}
+
+.input-container:hover .input-icon {
+    transform: translateY(-50%) scale(1.05);
+    color: rgba(14, 58, 64, 0.85);
+}
+
+.toggle-password {
+    cursor: pointer;
+    z-index: 3;
+    right: 1rem;
+    left: auto;
+}
+
+.toggle-password:hover {
+    color: var(--color-primary);
+    filter: drop-shadow(0 0 8px rgba(247, 199, 187, 0.6));
+}
+
+/* Options du formulaire */
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #6B7280;
+    user-select: none;
+}
+
+.checkbox-container input {
+    display: none;
+}
+
+.checkmark {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #D1D5DB;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    position: relative;
+    transition: var(--transition);
+    background: white;
+}
+
+.checkbox-container input:checked + .checkmark {
+    background: var(--gradient-secondary);
+    border-color: #175C64;
+}
+
+.checkbox-container input:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.forgot-link {
+    color: #175C64;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.forgot-link:hover {
+    color: #0E3A40;
+    text-decoration: underline;
+}
+
+/* Bouton de soumission - Glassmorphism */
+.submit-btn {
+    width: 100%;
+    padding: 1rem 2rem;
+    background: var(--gradient-secondary);
+    color: white;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    margin: 1.5rem 0;
+    box-shadow: 0 0 30px rgba(23, 92, 100, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.1);
+    animation: slideInFromBottom 0.6s ease-out 0.6s both;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.submit-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.submit-btn:hover::before {
+    left: 100%;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px rgba(247, 199, 187, 0.6), inset 0 0 30px rgba(255, 255, 255, 0.15);
+    border-color: rgba(247, 199, 187, 0.3);
+}
+
+.submit-btn:active {
+    transform: translateY(0);
+}
+
+.btn-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Diviseur */
+.divider {
+    position: relative;
+    text-align: center;
+    margin: 2rem 0;
+    color: #9CA3AF;
+    font-size: 0.9rem;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #E5E7EB, transparent);
+}
+
+.divider span {
+    background: white;
+    padding: 0 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+/* Boutons sociaux */
+.social-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    background: white;
+    color: #374151;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    width: 100%;
+}
+
+.social-btn:hover {
+    border-color: #175C64;
+    background: rgba(23, 92, 100, 0.05);
+    transform: translateY(-1px);
+}
+
+.google-btn:hover {
+    border-color: #4285F4;
+    background: rgba(66, 133, 244, 0.05);
+}
+
+.github-btn:hover {
+    border-color: #333;
+    background: rgba(51, 51, 51, 0.05);
+}
+
+/* Lien d'inscription */
+.signup-link {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #6B7280;
+}
+
+.signup-link a {
+    color: #175C64;
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.signup-link a:hover {
+    color: #0E3A40;
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .auth-container {
+        flex-direction: column;
+        min-height: 100vh;
+    }
+    
+    .animation-section {
+        flex: none;
+        height: 40vh;
+        min-height: 300px;
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+    }
+    
+    .form-section {
+        flex: none;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+    
+    .animation-container {
+        height: 300px;
+    }
+    
+    #login-animation {
+        width: 300px;
+        height: 300px;
+    }
+}
+
+@media (max-width: 640px) {
+    .form-container {
+        padding: 1.5rem;
+    }
+    
+    .form-title {
+        font-size: 2rem;
+    }
+    
+    .form-subtitle {
+        font-size: 1rem;
+    }
+    
+    .form-options {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .animation-container {
+        height: 250px;
+    }
+    
+    #login-animation {
+        width: 250px;
+        height: 250px;
+    }
+    
+    .floating-circle {
+        display: none;
+    }
+}
+
+/* Animations d'entrée */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(5px);
+    }
+}
+
+.animation-section {
+    animation: slideInLeft 0.8s ease-out;
+}
+
+.form-section {
+    animation: slideInRight 0.8s ease-out;
+}
+
+/* Animation au hover du bouton */
+.submit-btn:hover {
+    animation: pulse 0.6s ease-in-out;
+}
+
+/* Animation d'erreur pour les inputs */
+.form-input.error {
+    animation: shake 0.5s;
+    border-color: #ef4444;
+}
+
+/* Global override to ensure all text appears black across the light theme */
+body,
+body * {
+    color: #000 !important;
+    -webkit-text-fill-color: #000 !important;
+}

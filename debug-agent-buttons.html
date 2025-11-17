@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Agent Buttons</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #1a1a2e;
+            color: white;
+            padding: 2rem;
+        }
+        .btn {
+            background: #f7c7bb;
+            color: #1a1a2e;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 0.5rem;
+        }
+        .btn:hover {
+            background: #f5b5a5;
+        }
+        .result {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Courier New', monospace;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug - Boutons Agent</h1>
+    
+    <button class="btn" onclick="checkFunctions()">Vérifier les fonctions</button>
+    <button class="btn" onclick="testModal()">Tester la modal</button>
+    <button class="btn" onclick="loadTestLeads()">Charger des leads test</button>
+    
+    <div id="result" class="result"></div>
+    
+    <!-- Table de test -->
+    <div id="testTable" style="margin-top: 2rem;"></div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="lead-modal.js"></script>
+    <script src="agent.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const result = document.getElementById('result');
+            const icon = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            }[type];
+            
+            result.innerHTML += `<div class="${type}">${icon} ${message}</div>`;
+        }
+        
+        function clearLog() {
+            document.getElementById('result').innerHTML = '';
+        }
+        
+        function checkFunctions() {
+            clearLog();
+            log('Vérification des fonctions...', 'info');
+            
+            // Vérifier les fonctions globales
+            const functions = [
+                'openLeadModal',
+                'closeLeadModal',
+                'loadLeads',
+                'checkAuth',
+                'supabase'
+            ];
+            
+            functions.forEach(func => {
+                if (typeof window[func] !== 'undefined') {
+                    log(`${func}: ✅ défini`, 'success');
+                } else {
+                    log(`${func}: ❌ non défini`, 'error');
+                }
+            });
+            
+            // Vérifier les variables
+            if (typeof currentUser !== 'undefined') {
+                log(`currentUser: ${currentUser ? 'défini' : 'non défini'}`, currentUser ? 'success' : 'warning');
+            } else {
+                log('currentUser: ❌ non défini', 'error');
+            }
+        }
+        
+        async function testModal() {
+            clearLog();
+            log('Test de la modal...', 'info');
+            
+            if (typeof openLeadModal === 'undefined') {
+                log('openLeadModal non définie', 'error');
+                return;
+            }
+            
+            // Créer un lead test
+            const testLead = {
+                id: 'test-id-123',
+                project_name: 'Test Projet',
+                response_data: {
+                    'field-1': 'Valeur test',
+                    'field-2': 'Autre valeur'
+                },
+                notes: 'Notes test',
+                audio_url: null,
+                status: 'pending'
+            };
+            
+            // Simuler le lead
+            window.currentLead = testLead;
+            
+            try {
+                await openLeadModal('test-id-123', false);
+                log('Modal ouverte avec succès', 'success');
+            } catch (error) {
+                log(`Erreur: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadTestLeads() {
+            clearLog();
+            log('Chargement des leads test...', 'info');
+            
+            try {
+                // Vérifier la session
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (!session) {
+                    log('Aucune session - connexion requise', 'warning');
+                    log('Redirection vers index.html...', 'info');
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                log(`Session: ${session.user.email}`, 'success');
+                
+                // Charger les leads
+                const { data: leads, error } = await supabase
+                    .from('project_responses')
+                    .select('*, projects(name)')
+                    .eq('user_id', session.user.id)
+                    .limit(5);
+                
+                if (error) {
+                    log(`Erreur: ${error.message}`, 'error');
+                    return;
+                }
+                
+                log(`${leads.length} lead(s) trouvé(s)`, 'success');
+                
+                // Créer la table HTML
+                const tableDiv = document.getElementById('testTable');
+                
+                if (leads.length === 0) {
+                    tableDiv.innerHTML = '<p style="color: #f59e0b;">Aucun lead trouvé pour cet agent</p>';
+                    return;
+                }
+                
+                let html = `
+                    <h2>📋 Leads de test</h2>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.1);">
+                                <th style="padding: 1rem; text-align: left;">Projet</th>
+                                <th style="padding: 1rem; text-align: left;">Date</th>
+                                <th style="padding: 1rem; text-align: left;">Statut</th>
+                                <th style="padding: 1rem; text-align: left;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                leads.forEach(lead => {
+                    const status = lead.status || 'pending';
+                    const statusConfig = {
+                        pending: { label: '⏳ En attente', color: '#f59e0b' },
+                        validated: { label: '✅ Validé', color: '#10b981' },
+                        rejected: { label: '❌ Rejeté', color: '#ef4444' }
+                    };
+                    
+                    const statusInfo = statusConfig[status] || statusConfig.pending;
+                    
+                    html += `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 1rem;">${lead.projects?.name || 'N/A'}</td>
+                            <td style="padding: 1rem;">${new Date(lead.created_at).toLocaleString('fr-FR')}</td>
+                            <td style="padding: 1rem;">
+                                <span style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #f59e0b; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.875rem;">
+                                    ${statusInfo.label}
+                                </span>
+                            </td>
+                            <td style="padding: 1rem;">
+                                <button class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem;" onclick="testOpenModal('${lead.id}', false)">
+                                    👁️ Voir
+                                </button>
+                                <button class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; background: #60a5fa;" onclick="testOpenModal('${lead.id}', true)">
+                                    ✏️ Modifier
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                
+                tableDiv.innerHTML = html;
+                
+                log('Table créée avec succès', 'success');
+                
+            } catch (error) {
+                log(`Erreur: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testOpenModal(leadId, editable) {
+            log(`Ouverture modal (${editable ? 'édition' : 'lecture'}) pour lead: ${leadId}`, 'info');
+            
+            try {
+                await openLeadModal(leadId, editable);
+                log('Modal ouverte avec succès', 'success');
+            } catch (error) {
+                log(`Erreur: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-check au chargement
+        window.addEventListener('DOMContentLoaded', () => {
+            checkFunctions();
+        });
+    </script>
+    
+    <!-- Lead Details Modal Container -->
+    <div id="leadModal"></div>
+</body>
+</html>

@@ -1,0 +1,2 @@
+crée moi une page d authentification modern avec annimation vous pouver utiliser l animation de format json login.json sur la gauche et le formulaire d atuthentification soit sur la droite avec une degradation de couleur #F7C7BB  #175C64 #EEF2F2 #0E3A40 
+je veux un truc trop trop modern 

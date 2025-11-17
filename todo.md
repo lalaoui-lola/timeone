@@ -1,0 +1,5 @@
+- [x] Analyser la structure du projet (index.html, styles.css, script.js)
+- [x] Examiner le script.js pour comprendre l'animation
+- [x] Lancer un serveur HTTP Python
+- [x] Ouvrir le navigateur pour visualiser l'animation
+- [x] Vérifier que l'animation fonctionne correctement

@@ -1,0 +1,21 @@
+FAVICON MANQUANT
+================
+
+Pour éviter l'erreur "favicon.ico:1 Failed to load resource: the server responded with a status of 404"
+
+OPTIONS:
+
+1. Créer un favicon.ico
+   - Aller sur https://favicon.io/
+   - Générer un favicon
+   - Télécharger et placer dans le dossier racine
+
+2. Ajouter dans le <head> de chaque HTML:
+   <link rel="icon" type="image/png" href="logo.png">
+
+3. Ou désactiver le favicon:
+   <link rel="icon" href="data:,">
+
+SOLUTION RAPIDE:
+Ajouter dans le <head> de tous les fichiers HTML:
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>">

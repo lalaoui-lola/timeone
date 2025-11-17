@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Agent Leads</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧪</text></svg>">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #1a1a2e;
+            color: white;
+            padding: 2rem;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 { color: #f7c7bb; }
+        h2 { color: #60a5fa; margin-top: 2rem; }
+        .test-section {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        .btn {
+            background: #f7c7bb;
+            color: #1a1a2e;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 0.5rem;
+        }
+        .btn:hover {
+            background: #f5b5a5;
+        }
+        .btn-secondary {
+            background: #60a5fa;
+        }
+        .btn-secondary:hover {
+            background: #3b82f6;
+        }
+        .result {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+        .info { color: #60a5fa; }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Agent - Visualisation et Modification des Leads</h1>
+        
+        <div class="test-section">
+            <h2>1️⃣ Vérification de la session</h2>
+            <button class="btn" onclick="testSession()">Tester la session</button>
+            <div id="sessionResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>2️⃣ Chargement des leads</h2>
+            <button class="btn" onclick="testLoadLeads()">Charger mes leads</button>
+            <div id="leadsResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>3️⃣ Test de la modal</h2>
+            <input type="text" id="leadIdInput" placeholder="ID du lead" style="padding: 0.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; margin-right: 0.5rem;">
+            <button class="btn" onclick="testOpenModal(false)">Ouvrir en lecture</button>
+            <button class="btn btn-secondary" onclick="testOpenModal(true)">Ouvrir en édition</button>
+            <div id="modalResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>4️⃣ Test des permissions RLS</h2>
+            <button class="btn" onclick="testPermissions()">Tester les permissions</button>
+            <div id="permissionsResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>5️⃣ Test complet</h2>
+            <button class="btn" onclick="runAllTests()">Exécuter tous les tests</button>
+            <div id="allTestsResult" class="result"></div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="lead-modal.js"></script>
+    
+    <script>
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            }[type];
+            
+            element.innerHTML += `<div class="${type}">${icon} [${timestamp}] ${message}</div>`;
+        }
+        
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+        
+        async function testSession() {
+            clearLog('sessionResult');
+            log('sessionResult', 'Test de la session...', 'info');
+            
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error) throw error;
+                
+                if (!session) {
+                    log('sessionResult', 'Aucune session active. Veuillez vous connecter.', 'error');
+                    return;
+                }
+                
+                log('sessionResult', `Session active: ${session.user.email}`, 'success');
+                log('sessionResult', `User ID: ${session.user.id}`, 'info');
+                
+                // Get profile
+                const { data: profile, error: profileError } = await supabase
+                    .from('user_profiles')
+                    .select('role, email')
+                    .eq('user_id', session.user.id)
+                    .single();
+                
+                if (profileError) throw profileError;
+                
+                log('sessionResult', `Rôle: ${profile.role}`, 'success');
+                log('sessionResult', `Email: ${profile.email}`, 'info');
+                
+            } catch (error) {
+                log('sessionResult', `Erreur: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testLoadLeads() {
+            clearLog('leadsResult');
+            log('leadsResult', 'Chargement des leads...', 'info');
+            
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (!session) {
+                    log('leadsResult', 'Session expirée', 'error');
+                    return;
+                }
+                
+                const { data: leads, error } = await supabase
+                    .from('project_responses')
+                    .select(`
+                        *,
+                        projects (name)
+                    `)
+                    .eq('user_id', session.user.id)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                log('leadsResult', `✅ ${leads.length} lead(s) trouvé(s)`, 'success');
+                
+                if (leads.length > 0) {
+                    leads.forEach((lead, index) => {
+                        log('leadsResult', `\nLead ${index + 1}:`, 'info');
+                        log('leadsResult', `  ID: ${lead.id}`, 'info');
+                        log('leadsResult', `  Projet: ${lead.projects?.name || 'N/A'}`, 'info');
+                        log('leadsResult', `  Date: ${new Date(lead.created_at).toLocaleString('fr-FR')}`, 'info');
+                        log('leadsResult', `  Statut: ${lead.status || 'pending'}`, 'info');
+                    });
+                    
+                    // Auto-fill first lead ID
+                    document.getElementById('leadIdInput').value = leads[0].id;
+                    log('leadsResult', `\n💡 Premier lead ID copié dans le champ ci-dessous`, 'success');
+                } else {
+                    log('leadsResult', 'Aucun lead trouvé pour cet agent', 'warning');
+                }
+                
+            } catch (error) {
+                log('leadsResult', `Erreur: ${error.message}`, 'error');
+                console.error('Error details:', error);
+            }
+        }
+        
+        async function testOpenModal(editable) {
+            clearLog('modalResult');
+            const leadId = document.getElementById('leadIdInput').value;
+            
+            if (!leadId) {
+                log('modalResult', 'Veuillez entrer un ID de lead', 'error');
+                return;
+            }
+            
+            log('modalResult', `Ouverture de la modal (${editable ? 'édition' : 'lecture'})...`, 'info');
+            log('modalResult', `Lead ID: ${leadId}`, 'info');
+            
+            try {
+                if (typeof openLeadModal === 'undefined') {
+                    log('modalResult', 'Fonction openLeadModal non trouvée', 'error');
+                    log('modalResult', 'Assurez-vous que lead-modal.js est chargé', 'warning');
+                    return;
+                }
+                
+                await openLeadModal(leadId, editable);
+                log('modalResult', 'Modal ouverte avec succès', 'success');
+                
+            } catch (error) {
+                log('modalResult', `Erreur: ${error.message}`, 'error');
+                console.error('Error details:', error);
+            }
+        }
+        
+        async function testPermissions() {
+            clearLog('permissionsResult');
+            log('permissionsResult', 'Test des permissions RLS...', 'info');
+            
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (!session) {
+                    log('permissionsResult', 'Session expirée', 'error');
+                    return;
+                }
+                
+                // Test SELECT
+                log('permissionsResult', '\n📖 Test SELECT...', 'info');
+                const { data: selectData, error: selectError } = await supabase
+                    .from('project_responses')
+                    .select('id')
+                    .eq('user_id', session.user.id)
+                    .limit(1);
+                
+                if (selectError) {
+                    log('permissionsResult', `❌ SELECT échoué: ${selectError.message}`, 'error');
+                } else {
+                    log('permissionsResult', `✅ SELECT réussi (${selectData.length} résultat)`, 'success');
+                }
+                
+                // Test INSERT (simulation)
+                log('permissionsResult', '\n📝 Test INSERT...', 'info');
+                log('permissionsResult', 'ℹ️ Test INSERT non exécuté (évite de créer des données)', 'info');
+                
+                // Test UPDATE
+                if (selectData && selectData.length > 0) {
+                    log('permissionsResult', '\n✏️ Test UPDATE...', 'info');
+                    const { error: updateError } = await supabase
+                        .from('project_responses')
+                        .update({ notes: 'Test de permission' })
+                        .eq('id', selectData[0].id)
+                        .eq('user_id', session.user.id);
+                    
+                    if (updateError) {
+                        log('permissionsResult', `❌ UPDATE échoué: ${updateError.message}`, 'error');
+                    } else {
+                        log('permissionsResult', '✅ UPDATE réussi', 'success');
+                    }
+                }
+                
+                log('permissionsResult', '\n✅ Tests de permissions terminés', 'success');
+                
+            } catch (error) {
+                log('permissionsResult', `Erreur: ${error.message}`, 'error');
+            }
+        }
+        
+        async function runAllTests() {
+            clearLog('allTestsResult');
+            log('allTestsResult', '🚀 Exécution de tous les tests...', 'info');
+            
+            await testSession();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testLoadLeads();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testPermissions();
+            
+            log('allTestsResult', '\n✅ Tous les tests terminés', 'success');
+        }
+        
+        // Auto-run session test on load
+        window.addEventListener('DOMContentLoaded', () => {
+            testSession();
+        });
+    </script>
+    
+    <!-- Lead Details Modal Container -->
+    <div id="leadModal"></div>
+</body>
+</html>
