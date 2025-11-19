@@ -571,6 +571,64 @@ curl -X GET "https://votre-domaine.com/api/leads" \\
         </div>
     </div>
 
+    <!-- Modal Import Excel -->
+    <div class="modal" id="importExcelModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 id="importExcelTitle">Importer des leads Excel</h2>
+                <button class="modal-close" onclick="closeModal('importExcelModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-box" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                    <h3 style="color: #3b82f6; margin: 0 0 0.5rem 0; font-size: 1rem;">📋 Format du fichier Excel</h3>
+                    <p style="margin: 0 0 0.75rem 0; color: rgba(14, 58, 64, 0.7); font-size: 0.9rem;">
+                        Votre fichier Excel doit contenir les colonnes suivantes :
+                    </p>
+                    <div id="excelFormatColumns" style="background: rgba(255, 255, 255, 0.5); padding: 0.75rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem;">
+                        <!-- Les colonnes seront chargées dynamiquement -->
+                    </div>
+                    <p style="margin: 0.75rem 0 0 0; color: rgba(14, 58, 64, 0.6); font-size: 0.85rem;">
+                        💡 <strong>Astuce :</strong> La première ligne doit contenir les noms des colonnes exactement comme indiqué ci-dessus.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--color-secondary);">
+                        📁 Sélectionner le fichier Excel (.xlsx, .xls, .csv)
+                    </label>
+                    <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" 
+                           style="width: 100%; padding: 1rem; border: 2px dashed rgba(247, 199, 187, 0.5); border-radius: 12px; background: rgba(255, 248, 236, 0.5); cursor: pointer; transition: all 0.3s;">
+                    <p id="fileInfo" style="margin-top: 0.5rem; font-size: 0.85rem; color: rgba(14, 58, 64, 0.6);"></p>
+                </div>
+
+                <div id="importProgress" style="display: none; margin-top: 1rem;">
+                    <div style="background: rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 1rem;">
+                        <p id="importStatus" style="margin: 0; color: #10b981; font-weight: 600;"></p>
+                    </div>
+                </div>
+
+                <div id="importErrors" style="display: none; margin-top: 1rem;">
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 1rem;">
+                        <h4 style="color: #ef4444; margin: 0 0 0.5rem 0;">⚠️ Erreurs détectées</h4>
+                        <div id="errorsList" style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('importExcelModal')">Annuler</button>
+                <button class="btn-primary" onclick="processExcelImport()" id="importBtn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Importer les leads
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="supabase-config.js"></script>
     <script src="lead-modal.js"></script>
     <script src="admin-new.js"></script>

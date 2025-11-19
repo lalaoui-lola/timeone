@@ -241,10 +241,167 @@ document.getElementById('searchUsers').addEventListener('input', (e) => {
     });
 });
 
-// ========== GESTION DES PROJETS ==========
 
 let currentProjectId = null;
 let fieldCounter = 0;
+
+// ========== IMPORT EXCEL ==========
+
+let currentImportProjectId = null;
+let currentImportProjectFields = [];
+
+async function openImportExcelModal(projectId, projectName) {
+    currentImportProjectId = projectId;
+    
+    // Charger les champs du projet
+    const { data: fields } = await supabase
+        .from('project_fields')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('order_index');
+    
+    currentImportProjectFields = fields || [];
+    
+    // Afficher le format attendu
+    const formatDiv = document.getElementById('excelFormatColumns');
+    const columnNames = fields.map(f => f.name).join(' | ');
+    formatDiv.innerHTML = `<strong>${columnNames}</strong>`;
+    
+    document.getElementById('importExcelTitle').textContent = `Importer des leads - ${projectName}`;
+    document.getElementById('excelFileInput').value = '';
+    document.getElementById('fileInfo').textContent = '';
+    document.getElementById('importBtn').disabled = true;
+    document.getElementById('importProgress').style.display = 'none';
+    document.getElementById('importErrors').style.display = 'none';
+    
+    openModal('importExcelModal');
+}
+
+// Gérer la sélection du fichier
+document.getElementById('excelFileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        document.getElementById('fileInfo').textContent = ` ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+        document.getElementById('importBtn').disabled = false;
+    } else {
+        document.getElementById('fileInfo').textContent = '';
+        document.getElementById('importBtn').disabled = true;
+    }
+});
+
+async function processExcelImport() {
+    const fileInput = document.getElementById('excelFileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Veuillez sélectionner un fichier');
+        return;
+    }
+    
+    document.getElementById('importBtn').disabled = true;
+    document.getElementById('importProgress').style.display = 'block';
+    document.getElementById('importStatus').textContent = ' Lecture du fichier...';
+    document.getElementById('importErrors').style.display = 'none';
+    
+    try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet);
+        
+        if (rows.length === 0) {
+            throw new Error('Le fichier est vide');
+        }
+        
+        document.getElementById('importStatus').textContent = ` ${rows.length} lignes détectées. Validation...`;
+        
+        // Valider et préparer les données
+        const errors = [];
+        const validLeads = [];
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const rowNum = i + 2; // +2 car ligne 1 = header, et index commence à 0
+            const responseData = {};
+            let hasError = false;
+            
+            // Mapper chaque colonne aux champs du projet
+            for (const field of currentImportProjectFields) {
+                const value = row[field.name];
+                
+                // Vérifier les champs obligatoires
+                if (field.required && (value === undefined || value === null || value === '')) {
+                    errors.push(`Ligne ${rowNum}: Le champ "${field.name}" est obligatoire`);
+                    hasError = true;
+                    continue;
+                }
+                
+                // Convertir selon le type
+                if (value !== undefined && value !== null && value !== '') {
+                    if (field.type === 'number') {
+                        responseData[field.id] = Number(value);
+                    } else if (field.type === 'checkbox') {
+                        responseData[field.id] = Boolean(value);
+                    } else {
+                        responseData[field.id] = String(value);
+                    }
+                }
+            }
+            
+            if (!hasError) {
+                validLeads.push(responseData);
+            }
+        }
+        
+        if (errors.length > 0) {
+            document.getElementById('importErrors').style.display = 'block';
+            document.getElementById('errorsList').innerHTML = errors.map(e => `<p style="margin: 0.25rem 0;">• ${e}</p>`).join('');
+            document.getElementById('importStatus').textContent = ` ${errors.length} erreur(s) détectée(s). ${validLeads.length} lead(s) valide(s).`;
+            
+            if (validLeads.length === 0) {
+                document.getElementById('importBtn').disabled = false;
+                return;
+            }
+        }
+        
+        // Importer les leads valides
+        document.getElementById('importStatus').textContent = ` Import de ${validLeads.length} lead(s)...`;
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        const leadsToInsert = validLeads.map(responseData => ({
+            project_id: currentImportProjectId,
+            user_id: user.id,
+            response_data: responseData,
+            status: 'pending',
+            created_at: new Date().toISOString()
+        }));
+        
+        const { error: insertError } = await supabase
+            .from('project_responses')
+            .insert(leadsToInsert);
+        
+        if (insertError) throw insertError;
+        
+        document.getElementById('importStatus').textContent = ` ${validLeads.length} lead(s) importé(s) avec succès !`;
+        
+        setTimeout(() => {
+            closeModal('importExcelModal');
+            loadAllLeads();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Erreur import:', error);
+        document.getElementById('importErrors').style.display = 'block';
+        document.getElementById('errorsList').innerHTML = `<p style="color: #ef4444; margin: 0;"> ${error.message}</p>`;
+        document.getElementById('importStatus').textContent = ' Erreur lors de l\'import';
+        document.getElementById('importBtn').disabled = false;
+    }
+}
+
+// Charger les données au démarrage
+loadProjects();
+loadAllLeads();
 
 // Charger les projets
 async function loadProjects() {
@@ -283,6 +440,14 @@ async function loadProjects() {
                 <span>📅 ${new Date(project.created_at).toLocaleDateString('fr-FR')}</span>
             </div>
             <div class="project-actions">
+                <button class="btn-import" onclick="openImportExcelModal('${project.id}', '${project.name}')" title="Importer des leads depuis Excel">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Import Excel
+                </button>
                 <button class="btn-edit" onclick="editProject('${project.id}')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
