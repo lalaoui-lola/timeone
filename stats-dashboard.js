@@ -534,7 +534,10 @@ async function loadDailyLeads() {
             .gte('created_at', date.toISOString())
             .lt('created_at', nextDate.toISOString());
         
-        labels.push(date.toLocaleDateString('fr-FR', { weekday: 'short' }));
+        // Afficher le nom complet du jour + la date
+        const dayName = date.toLocaleDateString('fr-FR', { weekday: 'long' });
+        const dayDate = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        labels.push(`${dayName.charAt(0).toUpperCase() + dayName.slice(1)}\n${dayDate}`);
         data.push(count || 0);
     }
     
@@ -566,7 +569,12 @@ async function loadDailyLeads() {
                 },
                 tooltip: {
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12
+                    padding: 12,
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].label.replace('\n', ' - ');
+                        }
+                    }
                 }
             },
             scales: {
@@ -582,7 +590,12 @@ async function loadDailyLeads() {
                 },
                 x: {
                     ticks: {
-                        color: 'rgba(255, 255, 255, 0.6)'
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        font: {
+                            size: 11
+                        },
+                        maxRotation: 0,
+                        minRotation: 0
                     },
                     grid: {
                         display: false
