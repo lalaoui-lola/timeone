@@ -71,8 +71,14 @@ async function loadAllLeads() {
             });
         }
         
-        displayLeads(leads || []);
-        updateStats(leads || []);
+        // Stocker les données pour le filtrage
+        allLeadsData = leads || [];
+        
+        displayLeads(allLeadsData);
+        updateStats(allLeadsData);
+        
+        // Charger les projets dans le filtre
+        await loadConseillerProjectsFilter();
         
     } catch (error) {
         console.error('Erreur chargement leads:', error);
@@ -118,7 +124,7 @@ function displayLeads(leads) {
         tr.innerHTML = `
             <td>${lead.projects?.name || 'N/A'}</td>
             <td>${lead.agent_email || 'N/A'}</td>
-            <td>${new Date(lead.created_at).toLocaleString('fr-FR')}</td>
+            <td>${new Date(lead.created_at).toLocaleDateString('fr-FR')}</td>
             <td>${conseillerAvis}</td>
             <td>
                 <div class="action-buttons">
@@ -188,6 +194,58 @@ async function validateLead(leadId, status) {
         console.error('Erreur validation:', error);
         alert('Erreur lors de la validation: ' + error.message);
     }
+}
+
+// ========== FILTRES ==========
+
+let allLeadsData = []; // Stocker tous les leads pour le filtrage
+
+async function loadConseillerProjectsFilter() {
+    const { data: projects } = await supabase
+        .from('projects')
+        .select('id, name')
+        .order('name');
+    
+    const select = document.getElementById('filterConseillerProject');
+    if (select && projects) {
+        select.innerHTML = '<option value="">Tous les projets</option>';
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            select.appendChild(option);
+        });
+    }
+}
+
+function applyConseillerFilters() {
+    const projectFilter = document.getElementById('filterConseillerProject').value;
+    const dateFilter = document.getElementById('filterConseillerDate').value;
+    
+    let filteredLeads = [...allLeadsData];
+    
+    // Filtre par projet
+    if (projectFilter) {
+        filteredLeads = filteredLeads.filter(lead => lead.project_id === projectFilter);
+    }
+    
+    // Filtre par date
+    if (dateFilter) {
+        filteredLeads = filteredLeads.filter(lead => {
+            const leadDate = new Date(lead.created_at).toISOString().split('T')[0];
+            return leadDate === dateFilter;
+        });
+    }
+    
+    displayLeads(filteredLeads);
+    updateStats(filteredLeads);
+}
+
+function clearConseillerFilters() {
+    document.getElementById('filterConseillerProject').value = '';
+    document.getElementById('filterConseillerDate').value = '';
+    displayLeads(allLeadsData);
+    updateStats(allLeadsData);
 }
 
 // ========== PROJETS ==========
