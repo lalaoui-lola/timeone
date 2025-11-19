@@ -346,60 +346,44 @@ async function loadProjectsStats() {
     
     projectCounts.sort((a, b) => b.count - a.count);
     
-    if (projectsChart) {
-        projectsChart.destroy();
-    }
+    // Trouver le max pour calculer les pourcentages
+    const maxCount = Math.max(...projectCounts.map(p => p.count), 1);
     
-    const ctx = document.getElementById('projectsChart').getContext('2d');
-    projectsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: projectCounts.map(p => p.name),
-            datasets: [{
-                label: 'Nombre de leads',
-                data: projectCounts.map(p => p.count),
-                backgroundColor: 'rgba(247, 199, 187, 0.6)',
-                borderColor: 'rgba(247, 199, 187, 1)',
-                borderWidth: 2,
-                borderRadius: 8,
-                borderSkipped: false
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    titleColor: '#fff',
-                    bodyColor: '#fff'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        color: 'rgba(255, 255, 255, 0.6)',
-                        stepSize: 1
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    }
-                },
-                x: {
-                    ticks: {
-                        color: 'rgba(255, 255, 255, 0.6)'
-                    },
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
+    // Créer les barres HTML
+    const container = document.getElementById('projectsChart');
+    container.innerHTML = '';
+    container.style.height = 'auto';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '1rem';
+    container.style.padding = '0.5rem 0';
+    
+    projectCounts.forEach((project, index) => {
+        const percentage = maxCount > 0 ? (project.count / maxCount) * 100 : 0;
+        const minWidth = project.count === 0 ? 5 : Math.max(percentage, 10); // Minimum 10% si > 0
+        
+        const projectBar = document.createElement('div');
+        projectBar.className = 'project-bar-item';
+        projectBar.style.cssText = `
+            animation: slideInRight 0.5s ease forwards;
+            animation-delay: ${index * 0.1}s;
+            opacity: 0;
+        `;
+        
+        projectBar.innerHTML = `
+            <div class="project-bar-header">
+                <span class="project-bar-name">${project.name}</span>
+                <span class="project-bar-count">${project.count}</span>
+            </div>
+            <div class="project-bar-track">
+                <div class="project-bar-fill ${project.count === 0 ? 'empty' : ''}" 
+                     style="width: ${minWidth}%"
+                     data-width="${minWidth}">
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(projectBar);
     });
 }
 
