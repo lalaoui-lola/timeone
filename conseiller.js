@@ -2,6 +2,37 @@
 let currentUser = null;
 let currentProjectId = null;
 
+// ========== INITIALISATION ==========
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await checkAuth();
+    await loadProjects();
+    setupTabNavigation();
+});
+
+function setupTabNavigation() {
+    document.querySelectorAll('.nav-item[data-tab]').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const tab = e.currentTarget.dataset.tab;
+            
+            // Mettre à jour les boutons actifs
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            
+            // Mettre à jour les contenus
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tab}Tab`).classList.add('active');
+            
+            // Charger les données selon l'onglet
+            if (tab === 'leads') {
+                await loadAllLeads();
+            } else if (tab === 'stats') {
+                await loadConseillerStats();
+            }
+        });
+    });
+}
+
 // ========== AUTHENTIFICATION ==========
 
 async function checkAuth() {
@@ -163,11 +194,312 @@ function updateStats(leads) {
     document.getElementById('totalLeads').textContent = total;
     document.getElementById('pendingLeads').textContent = pending;
     document.getElementById('validatedLeads').textContent = validated;
+}
+
+// ========== STATISTIQUES AVANCÉES ==========
+
+let conseillerCharts = {
+    status: null,
+    daily: null,
+    monthly: null
+};
+
+async function loadConseillerStats() {
+    try {
+        // Charger tous les leads validés
+        const { data: leads } = await supabase
+            .from('project_responses')
+            .select('*, projects(name)')
+            .eq('status', 'validated')
+            .order('created_at', { ascending: false });
+        
+        if (!leads) return;
+        
+        // KPIs
+        const totalLeads = leads.length;
+        const leadsOK = leads.filter(l => l.conseiller_status === 'OK').length;
+        const leadsRappeler = leads.filter(l => l.conseiller_status === 'A_RAPPELER').length;
+        const leadsNonOK = leads.filter(l => l.conseiller_status === 'NON_OK').length;
+        const tauxOK = totalLeads > 0 ? ((leadsOK / totalLeads) * 100).toFixed(1) : 0;
+        
+        // Leads du mois en cours
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const leadsMois = leads.filter(l => new Date(l.created_at) >= firstDayOfMonth).length;
+        
+        // Leads de la semaine en cours (Lundi-Dimanche)
+        const currentDay = now.getDay();
+        const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - daysFromMonday);
+        monday.setHours(0, 0, 0, 0);
+        const leadsSemaine = leads.filter(l => new Date(l.created_at) >= monday).length;
+        
+        // Mettre à jour les KPIs
+        document.getElementById('kpiTotalLeads').textContent = totalLeads;
+        document.getElementById('kpiLeadsOK').textContent = leadsOK;
+        document.getElementById('kpiLeadsRappeler').textContent = leadsRappeler;
+        document.getElementById('kpiLeadsNonOK').textContent = leadsNonOK;
+        document.getElementById('kpiTauxOK').textContent = `${tauxOK}%`;
+        document.getElementById('kpiLeadsMois').textContent = leadsMois;
+        document.getElementById('kpiLeadsSemaine').textContent = leadsSemaine;
+        
+        // Charger les graphiques
+        await loadConseillerProjectsChart(leads);
+        loadConseillerStatusChart(leadsOK, leadsRappeler, leadsNonOK, totalLeads - leadsOK - leadsRappeler - leadsNonOK);
+        await loadConseillerDailyChart();
+        await loadConseillerMonthlyChart();
+        
+    } catch (error) {
+        console.error('Erreur chargement stats:', error);
+    }
+}
+
+async function loadConseillerProjectsChart(leads) {
+    // Grouper par projet
+    const projectCounts = {};
+    leads.forEach(lead => {
+        const projectName = lead.projects?.name || 'N/A';
+        projectCounts[projectName] = (projectCounts[projectName] || 0) + 1;
+    });
     
-    document.getElementById('statsTotal').textContent = total;
-    document.getElementById('statsPending').textContent = pending;
-    document.getElementById('statsValidated').textContent = validated;
-    document.getElementById('statsRejected').textContent = rejected;
+    const projectData = Object.entries(projectCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count);
+    
+    const maxCount = Math.max(...projectData.map(p => p.count), 1);
+    
+    const container = document.getElementById('conseillerProjectsChart');
+    container.innerHTML = '';
+    
+    projectData.forEach((project, index) => {
+        const percentage = (project.count / maxCount) * 100;
+        const minWidth = project.count === 0 ? 5 : Math.max(percentage, 10);
+        
+        const projectBar = document.createElement('div');
+        projectBar.className = 'project-bar-item';
+        projectBar.style.cssText = `
+            animation: slideInRight 0.5s ease forwards;
+            animation-delay: ${index * 0.1}s;
+            opacity: 0;
+        `;
+        
+        projectBar.innerHTML = `
+            <div class="project-bar-header">
+                <span class="project-bar-name">${project.name}</span>
+                <span class="project-bar-count">${project.count}</span>
+            </div>
+            <div class="project-bar-track">
+                <div class="project-bar-fill ${project.count === 0 ? 'empty' : ''}" 
+                     style="width: ${minWidth}%">
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(projectBar);
+    });
+}
+
+function loadConseillerStatusChart(ok, rappeler, nonOk, nonTraite) {
+    if (conseillerCharts.status) {
+        conseillerCharts.status.destroy();
+    }
+    
+    const ctx = document.getElementById('conseillerStatusChart').getContext('2d');
+    conseillerCharts.status = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['OK', 'À Rappeler', 'Non OK', 'Non Traité'],
+            datasets: [{
+                data: [ok, rappeler, nonOk, nonTraite],
+                backgroundColor: [
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(156, 163, 175, 0.8)'
+                ],
+                borderColor: [
+                    '#10b981',
+                    '#f59e0b',
+                    '#ef4444',
+                    '#9ca3af'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12
+                }
+            }
+        }
+    });
+}
+
+async function loadConseillerDailyChart() {
+    const labels = [];
+    const data = [];
+    
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+        
+        const nextDate = new Date(date);
+        nextDate.setDate(nextDate.getDate() + 1);
+        
+        const { count } = await supabase
+            .from('project_responses')
+            .select('*', { count: 'exact' })
+            .eq('status', 'validated')
+            .gte('created_at', date.toISOString())
+            .lt('created_at', nextDate.toISOString());
+        
+        const dayName = date.toLocaleDateString('fr-FR', { weekday: 'long' });
+        const dayDate = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        labels.push(`${dayName.charAt(0).toUpperCase() + dayName.slice(1)}\n${dayDate}`);
+        data.push(count || 0);
+    }
+    
+    if (conseillerCharts.daily) {
+        conseillerCharts.daily.destroy();
+    }
+    
+    const ctx = document.getElementById('conseillerDailyChart').getContext('2d');
+    conseillerCharts.daily = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Leads',
+                data: data,
+                backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                borderColor: 'rgba(16, 185, 129, 1)',
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        stepSize: 1
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        font: { size: 11 }
+                    },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+async function loadConseillerMonthlyChart() {
+    const now = new Date();
+    const labels = [];
+    const data = [];
+    
+    for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        
+        const { count } = await supabase
+            .from('project_responses')
+            .select('*', { count: 'exact' })
+            .eq('status', 'validated')
+            .gte('created_at', date.toISOString())
+            .lt('created_at', nextMonth.toISOString());
+        
+        labels.push(date.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }));
+        data.push(count || 0);
+    }
+    
+    if (conseillerCharts.monthly) {
+        conseillerCharts.monthly.destroy();
+    }
+    
+    const ctx = document.getElementById('conseillerMonthlyChart').getContext('2d');
+    conseillerCharts.monthly = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Leads validés',
+                data: data,
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#3b82f6',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        stepSize: 1
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.6)'
+                    },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
 }
 
 // ========== VALIDATION DES LEADS ==========

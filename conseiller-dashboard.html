@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="animations.css">
     <link rel="stylesheet" href="admin-styles.css">
     <link rel="stylesheet" href="lead-modal.css">
+    <link rel="stylesheet" href="stats-styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Conseiller Form Styles */
         #conseillerStatus {
@@ -264,45 +266,141 @@
 
             <!-- Stats Tab -->
             <div class="tab-content" id="statsTab">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                <!-- KPI Grid -->
+                <div class="kpi-grid" style="margin-bottom: 2rem;">
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="9" cy="7" r="4"></circle>
                             </svg>
                         </div>
-                        <h3 class="stat-label">Total Leads</h3>
-                        <p class="stat-value" id="statsTotal">0</p>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 16 14"></polyline>
-                            </svg>
+                        <div class="kpi-content">
+                            <p class="kpi-label">Total Leads</p>
+                            <h3 class="kpi-value" id="kpiTotalLeads">0</h3>
                         </div>
-                        <h3 class="stat-label">En attente</h3>
-                        <p class="stat-value" id="statsPending">0</p>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
                         </div>
-                        <h3 class="stat-label">Validés</h3>
-                        <p class="stat-value" id="statsValidated">0</p>
+                        <div class="kpi-content">
+                            <p class="kpi-label">Leads OK</p>
+                            <h3 class="kpi-value" id="kpiLeadsOK">0</h3>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                        </div>
+                        <div class="kpi-content">
+                            <p class="kpi-label">À Rappeler</p>
+                            <h3 class="kpi-value" id="kpiLeadsRappeler">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
                         </div>
-                        <h3 class="stat-label">Rejetés</h3>
-                        <p class="stat-value" id="statsRejected">0</p>
+                        <div class="kpi-content">
+                            <p class="kpi-label">Non OK</p>
+                            <h3 class="kpi-value" id="kpiLeadsNonOK">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="kpi-content">
+                            <p class="kpi-label">Taux OK</p>
+                            <h3 class="kpi-value" id="kpiTauxOK">0%</h3>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                        <div class="kpi-content">
+                            <p class="kpi-label">Mois en cours</p>
+                            <h3 class="kpi-value" id="kpiLeadsMois">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                        <div class="kpi-content">
+                            <p class="kpi-label">Semaine en cours</p>
+                            <h3 class="kpi-value" id="kpiLeadsSemaine">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 1 -->
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>📊 Leads par Projet</h3>
+                        </div>
+                        <div id="conseillerProjectsChart" style="padding: 0.5rem 0;">
+                            <!-- Project bars will be loaded here -->
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>📈 Répartition des Avis</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="conseillerStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2 -->
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>📅 Leads par Jour (7 derniers jours)</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="conseillerDailyChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>🎯 Performance Mensuelle</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="conseillerMonthlyChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
