@@ -218,8 +218,8 @@ async function loadConseillerStats() {
         // KPIs
         const totalLeads = leads.length;
         const leadsOK = leads.filter(l => l.conseiller_status === 'OK').length;
-        const leadsRappeler = leads.filter(l => l.conseiller_status === 'A_RAPPELER').length;
-        const leadsNonOK = leads.filter(l => l.conseiller_status === 'NON_OK').length;
+        const leadsRappeler = leads.filter(l => l.conseiller_status === 'Rappeler').length;
+        const leadsNonOK = leads.filter(l => l.conseiller_status === 'No OK').length;
         const tauxOK = totalLeads > 0 ? ((leadsOK / totalLeads) * 100).toFixed(1) : 0;
         
         // Leads du mois en cours
