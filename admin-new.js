@@ -277,17 +277,54 @@ async function openImportExcelModal(projectId, projectName) {
     openModal('importExcelModal');
 }
 
-// Gérer la sélection du fichier
-document.getElementById('excelFileInput').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        document.getElementById('fileInfo').textContent = ` ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
-        document.getElementById('importBtn').disabled = false;
-    } else {
-        document.getElementById('fileInfo').textContent = '';
-        document.getElementById('importBtn').disabled = true;
+// Télécharger le modèle Excel
+function downloadExcelTemplate() {
+    if (!currentImportProjectFields || currentImportProjectFields.length === 0) {
+        alert('Aucun champ disponible pour ce projet');
+        return;
     }
-});
+    
+    // Créer un workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Créer les en-têtes (noms des champs)
+    const headers = currentImportProjectFields.map(f => f.name);
+    
+    // Créer une ligne d'exemple
+    const exampleRow = currentImportProjectFields.map(f => {
+        if (f.type === 'number') return '123';
+        if (f.type === 'email') return 'exemple@email.com';
+        if (f.type === 'tel') return '0612345678';
+        if (f.type === 'checkbox') return 'Oui';
+        return 'Exemple';
+    });
+    
+    // Créer la feuille avec en-têtes et exemple
+    const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
+    
+    // Ajouter la feuille au workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+    
+    // Télécharger le fichier
+    XLSX.writeFile(wb, `modele_import_leads.xlsx`);
+}
+
+// Gérer la sélection du fichier (avec setTimeout pour s'assurer que le DOM est chargé)
+setTimeout(() => {
+    const fileInput = document.getElementById('excelFileInput');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('fileInfo').textContent = ` ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                document.getElementById('importBtn').disabled = false;
+            } else {
+                document.getElementById('fileInfo').textContent = '';
+                document.getElementById('importBtn').disabled = true;
+            }
+        });
+    }
+}, 500);
 
 async function processExcelImport() {
     const fileInput = document.getElementById('excelFileInput');

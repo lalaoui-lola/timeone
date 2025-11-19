@@ -580,7 +580,17 @@ curl -X GET "https://votre-domaine.com/api/leads" \\
             </div>
             <div class="modal-body">
                 <div class="info-box" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
-                    <h3 style="color: #3b82f6; margin: 0 0 0.5rem 0; font-size: 1rem;">📋 Format du fichier Excel</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h3 style="color: #3b82f6; margin: 0; font-size: 1rem;">📋 Format du fichier Excel</h3>
+                        <button onclick="downloadExcelTemplate()" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.3rem;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Télécharger le modèle
+                        </button>
+                    </div>
                     <p style="margin: 0 0 0.75rem 0; color: rgba(14, 58, 64, 0.7); font-size: 0.9rem;">
                         Votre fichier Excel doit contenir les colonnes suivantes :
                     </p>
@@ -588,7 +598,7 @@ curl -X GET "https://votre-domaine.com/api/leads" \\
                         <!-- Les colonnes seront chargées dynamiquement -->
                     </div>
                     <p style="margin: 0.75rem 0 0 0; color: rgba(14, 58, 64, 0.6); font-size: 0.85rem;">
-                        💡 <strong>Astuce :</strong> La première ligne doit contenir les noms des colonnes exactement comme indiqué ci-dessus.
+                        💡 <strong>Astuce :</strong> Téléchargez le modèle ci-dessus pour avoir un fichier pré-formaté avec une ligne d'exemple.
                     </p>
                 </div>
 
