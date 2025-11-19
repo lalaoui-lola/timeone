@@ -577,12 +577,15 @@ body::before {
     border: 1px solid var(--glass-border);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-glass);
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: visible;
+    width: 100%;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 1000px;
 }
 
 thead {
