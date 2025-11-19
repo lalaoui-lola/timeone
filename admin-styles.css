@@ -453,6 +453,65 @@ body::before {
     color: rgba(14, 58, 64, 0.45);
 }
 
+/* Section Stats (mini cartes) */
+.section-stats {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.stat-item {
+    flex: 0 0 auto;
+    min-width: 120px;
+    padding: 0.9rem 1.1rem;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255, 248, 236, 0.9), rgba(247, 199, 187, 0.35));
+    border: 1px solid rgba(247, 199, 187, 0.6);
+    box-shadow: 0 10px 25px rgba(23, 92, 100, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    transform-origin: center;
+    transform: translateY(0) scale(1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.8), transparent 55%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stat-item:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 16px 40px rgba(23, 92, 100, 0.22);
+}
+
+.stat-item:hover::before {
+    opacity: 1;
+}
+
+.stat-number {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-secondary);
+    letter-spacing: 0.02em;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(14, 58, 64, 0.65);
+}
+
 .filter-item select option {
     background: #FFF8EC;
     color: var(--color-dark);
