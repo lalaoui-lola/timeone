@@ -294,32 +294,51 @@ async function openImportExcelModal(projectId, projectName) {
 }
 
 // Télécharger le modèle Excel
-function downloadExcelTemplate() {
+async function downloadExcelTemplate() {
     if (!currentImportProjectFields || currentImportProjectFields.length === 0) {
         alert('Aucun champ disponible pour ce projet');
         return;
     }
     
+    // Charger la liste des agents
+    const { data: agents } = await supabase
+        .from('user_profiles')
+        .select('email')
+        .eq('role', 'agent')
+        .order('email');
+    
     // Créer un workbook
     const wb = XLSX.utils.book_new();
     
-    // Créer les en-têtes (noms des champs)
-    const headers = currentImportProjectFields.map(f => f.name);
+    // Créer les en-têtes (Agent + noms des champs)
+    const headers = ['Agent (Email)', ...currentImportProjectFields.map(f => f.name)];
     
     // Créer une ligne d'exemple
-    const exampleRow = currentImportProjectFields.map(f => {
-        if (f.type === 'number') return '123';
-        if (f.type === 'email') return 'exemple@email.com';
-        if (f.type === 'tel') return '0612345678';
-        if (f.type === 'checkbox') return 'Oui';
-        return 'Exemple';
-    });
+    const exampleRow = [
+        agents && agents.length > 0 ? agents[0].email : 'agent@exemple.com',
+        ...currentImportProjectFields.map(f => {
+            if (f.type === 'number') return '123';
+            if (f.type === 'email') return 'exemple@email.com';
+            if (f.type === 'tel') return '0612345678';
+            if (f.type === 'checkbox') return 'Oui';
+            return 'Exemple';
+        })
+    ];
     
     // Créer la feuille avec en-têtes et exemple
     const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
     
-    // Ajouter la feuille au workbook
+    // Ajouter la feuille "Leads"
     XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+    
+    // Créer une feuille "Liste des agents" pour référence
+    if (agents && agents.length > 0) {
+        const agentsSheet = XLSX.utils.aoa_to_sheet([
+            ['Email des agents disponibles'],
+            ...agents.map(a => [a.email])
+        ]);
+        XLSX.utils.book_append_sheet(wb, agentsSheet, 'Liste Agents');
+    }
     
     // Télécharger le fichier
     XLSX.writeFile(wb, `modele_import_leads.xlsx`);
@@ -366,7 +385,18 @@ async function processExcelImport() {
             throw new Error('Le fichier est vide');
         }
         
-        document.getElementById('importStatus').textContent = ` ${rows.length} lignes détectées. Validation...`;
+        document.getElementById('importStatus').textContent = `📊 ${rows.length} lignes détectées. Validation...`;
+        
+        // Charger tous les agents pour mapper les emails aux user_id
+        const { data: allAgents } = await supabase
+            .from('user_profiles')
+            .select('user_id, email')
+            .eq('role', 'agent');
+        
+        const agentEmailMap = {};
+        allAgents?.forEach(agent => {
+            agentEmailMap[agent.email.toLowerCase()] = agent.user_id;
+        });
         
         // Valider et préparer les données
         const errors = [];
@@ -377,6 +407,21 @@ async function processExcelImport() {
             const rowNum = i + 2; // +2 car ligne 1 = header, et index commence à 0
             const responseData = {};
             let hasError = false;
+            let agentUserId = null;
+            
+            // Récupérer l'email de l'agent
+            const agentEmail = row['Agent (Email)'];
+            if (!agentEmail || agentEmail.trim() === '') {
+                errors.push(`Ligne ${rowNum}: L'email de l'agent est obligatoire`);
+                hasError = true;
+            } else {
+                const emailLower = agentEmail.toLowerCase().trim();
+                agentUserId = agentEmailMap[emailLower];
+                if (!agentUserId) {
+                    errors.push(`Ligne ${rowNum}: Agent "${agentEmail}" non trouvé dans la base`);
+                    hasError = true;
+                }
+            }
             
             // Mapper chaque colonne aux champs du projet
             for (const field of currentImportProjectFields) {
@@ -402,7 +447,7 @@ async function processExcelImport() {
             }
             
             if (!hasError) {
-                validLeads.push(responseData);
+                validLeads.push({ responseData, agentUserId });
             }
         }
         
@@ -418,14 +463,12 @@ async function processExcelImport() {
         }
         
         // Importer les leads valides
-        document.getElementById('importStatus').textContent = ` Import de ${validLeads.length} lead(s)...`;
+        document.getElementById('importStatus').textContent = `💾 Import de ${validLeads.length} lead(s)...`;
         
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        const leadsToInsert = validLeads.map(responseData => ({
+        const leadsToInsert = validLeads.map(lead => ({
             project_id: currentImportProjectId,
-            user_id: user.id,
-            response_data: responseData,
+            user_id: lead.agentUserId,
+            response_data: lead.responseData,
             status: 'pending',
             created_at: new Date().toISOString()
         }));
@@ -436,7 +479,7 @@ async function processExcelImport() {
         
         if (insertError) throw insertError;
         
-        document.getElementById('importStatus').textContent = ` ${validLeads.length} lead(s) importé(s) avec succès !`;
+        document.getElementById('importStatus').textContent = `✅ ${validLeads.length} lead(s) importé(s) avec succès !`;
         
         setTimeout(() => {
             closeModal('importExcelModal');
