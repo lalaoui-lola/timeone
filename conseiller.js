@@ -257,25 +257,30 @@ async function displayProjectCards(projects) {
         
         const card = document.createElement('div');
         card.className = 'project-card conseiller-card';
+        card.style.cursor = 'pointer';
         card.onclick = () => openProjectLeads(project.id, project.name);
         
         card.innerHTML = `
-            <div class="project-card-header">
-                <div class="project-card-icon">📋</div>
-                <div class="project-card-title">
-                    <h3>${project.name}</h3>
-                    <p>${project.description || 'Aucune description'}</p>
+            <div class="project-header">
+                <div>
+                    <h3 class="project-title">${project.name}</h3>
+                    <p class="project-description">${project.description || 'Aucune description'}</p>
                 </div>
             </div>
-            <div class="project-card-stats">
-                <div class="project-stat">
-                    <span class="project-stat-value">${totalValidated}</span>
-                    <span class="project-stat-label">Leads validés</span>
-                </div>
-                <div class="project-stat">
-                    <span class="project-stat-value">${withConseillerStatus}</span>
-                    <span class="project-stat-label">Traités</span>
-                </div>
+            <div class="project-meta">
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                    </svg>
+                    ${totalValidated} Leads validés
+                </span>
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    ${withConseillerStatus} Traités
+                </span>
             </div>
         `;
         
