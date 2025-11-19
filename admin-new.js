@@ -1111,6 +1111,241 @@ if (document.getElementById('searchLeads')) {
     });
 }
 
+// ========== AJOUT DE LEAD PAR L'ADMIN ==========
+
+// Ouvrir le modal d'ajout de lead
+document.getElementById('addLeadBtn').addEventListener('click', async () => {
+    await openAddLeadModal();
+});
+
+// Ouvrir le modal et charger les données
+async function openAddLeadModal() {
+    try {
+        // Charger les projets
+        const { data: projects, error: projectsError } = await supabase
+            .from('projects')
+            .select('id, name')
+            .order('name', { ascending: true });
+        
+        if (projectsError) throw projectsError;
+        
+        // Charger les agents
+        const { data: agents, error: agentsError } = await supabase
+            .from('user_profiles')
+            .select('user_id, email, role')
+            .eq('role', 'agent')
+            .order('email', { ascending: true });
+        
+        if (agentsError) throw agentsError;
+        
+        // Remplir le select des projets
+        const projectSelect = document.getElementById('leadProjectSelect');
+        projectSelect.innerHTML = '<option value="">Sélectionnez un projet</option>';
+        projects.forEach(project => {
+            projectSelect.innerHTML += `<option value="${project.id}">${project.name}</option>`;
+        });
+        
+        // Remplir le select des agents
+        const agentSelect = document.getElementById('leadAgentSelect');
+        agentSelect.innerHTML = '<option value="">Sélectionnez un agent</option>';
+        agents.forEach(agent => {
+            agentSelect.innerHTML += `<option value="${agent.user_id}">${agent.email}</option>`;
+        });
+        
+        // Réinitialiser les champs dynamiques
+        document.getElementById('leadDynamicFields').innerHTML = '';
+        
+        openModal('addLeadModal');
+        
+    } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+        alert('Erreur lors du chargement des données: ' + error.message);
+    }
+}
+
+// Charger les champs du projet sélectionné
+document.getElementById('leadProjectSelect').addEventListener('change', async (e) => {
+    const projectId = e.target.value;
+    const dynamicFieldsContainer = document.getElementById('leadDynamicFields');
+    
+    if (!projectId) {
+        dynamicFieldsContainer.innerHTML = '';
+        return;
+    }
+    
+    try {
+        // Charger les champs du projet
+        const { data: fields, error } = await supabase
+            .from('project_fields')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('order', { ascending: true });
+        
+        if (error) throw error;
+        
+        // Générer les champs dynamiques
+        dynamicFieldsContainer.innerHTML = '<h4 style="color: var(--color-primary); margin-bottom: 1rem;">Informations du lead</h4>';
+        
+        fields.forEach(field => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'form-group';
+            
+            let fieldHTML = `<label>${field.name}${field.required ? ' *' : ''}</label>`;
+            
+            switch (field.type) {
+                case 'text':
+                case 'email':
+                case 'number':
+                case 'date':
+                case 'time':
+                case 'datetime':
+                    fieldHTML += `<input type="${field.type}" name="field_${field.id}" ${field.required ? 'required' : ''} placeholder="${field.name}">`;
+                    break;
+                    
+                case 'textarea':
+                    fieldHTML += `<textarea name="field_${field.id}" rows="4" ${field.required ? 'required' : ''} placeholder="${field.name}"></textarea>`;
+                    break;
+                    
+                case 'select':
+                    fieldHTML += `<select name="field_${field.id}" ${field.required ? 'required' : ''}>`;
+                    fieldHTML += `<option value="">Sélectionnez une option</option>`;
+                    if (field.options) {
+                        field.options.forEach(option => {
+                            fieldHTML += `<option value="${option}">${option}</option>`;
+                        });
+                    }
+                    fieldHTML += `</select>`;
+                    break;
+                    
+                case 'radio':
+                    if (field.options) {
+                        field.options.forEach((option, index) => {
+                            fieldHTML += `
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <input type="radio" name="field_${field.id}" value="${option}" id="field_${field.id}_${index}" ${field.required && index === 0 ? 'required' : ''}>
+                                    <label for="field_${field.id}_${index}" style="margin: 0; cursor: pointer;">${option}</label>
+                                </div>
+                            `;
+                        });
+                    }
+                    break;
+                    
+                case 'checkbox':
+                    fieldHTML += `
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <input type="checkbox" name="field_${field.id}" id="field_${field.id}" ${field.required ? 'required' : ''}>
+                            <label for="field_${field.id}" style="margin: 0; cursor: pointer;">${field.name}</label>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'checkboxes':
+                    if (field.options) {
+                        field.options.forEach((option, index) => {
+                            fieldHTML += `
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <input type="checkbox" name="field_${field.id}[]" value="${option}" id="field_${field.id}_${index}">
+                                    <label for="field_${field.id}_${index}" style="margin: 0; cursor: pointer;">${option}</label>
+                                </div>
+                            `;
+                        });
+                    }
+                    break;
+                    
+                case 'file':
+                    fieldHTML += `<input type="file" name="field_${field.id}" ${field.required ? 'required' : ''}>`;
+                    break;
+            }
+            
+            fieldDiv.innerHTML = fieldHTML;
+            dynamicFieldsContainer.appendChild(fieldDiv);
+        });
+        
+    } catch (error) {
+        console.error('Erreur lors du chargement des champs:', error);
+        alert('Erreur lors du chargement des champs: ' + error.message);
+    }
+});
+
+// Soumettre le formulaire d'ajout de lead
+document.getElementById('addLeadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const projectId = document.getElementById('leadProjectSelect').value;
+    const agentId = document.getElementById('leadAgentSelect').value;
+    const messageDiv = document.getElementById('addLeadMessage');
+    
+    if (!projectId || !agentId) {
+        alert('Veuillez sélectionner un projet et un agent');
+        return;
+    }
+    
+    messageDiv.style.display = 'block';
+    messageDiv.className = 'message';
+    messageDiv.textContent = 'Création du lead en cours...';
+    
+    try {
+        // Récupérer les champs du projet
+        const { data: fields, error: fieldsError } = await supabase
+            .from('project_fields')
+            .select('*')
+            .eq('project_id', projectId);
+        
+        if (fieldsError) throw fieldsError;
+        
+        // Construire l'objet response_data
+        const responseData = {};
+        const formData = new FormData(e.target);
+        
+        fields.forEach(field => {
+            const fieldName = `field_${field.id}`;
+            
+            if (field.type === 'checkboxes') {
+                // Pour les checkboxes multiples
+                const values = formData.getAll(`${fieldName}[]`);
+                responseData[field.id] = values;
+            } else if (field.type === 'checkbox') {
+                // Pour une checkbox unique
+                responseData[field.id] = formData.has(fieldName);
+            } else if (field.type === 'file') {
+                // Pour les fichiers, on stocke juste le nom (ou on pourrait uploader)
+                const file = formData.get(fieldName);
+                responseData[field.id] = file ? file.name : null;
+            } else {
+                // Pour tous les autres types
+                responseData[field.id] = formData.get(fieldName);
+            }
+        });
+        
+        // Créer le lead
+        const { data: newLead, error: insertError } = await supabase
+            .from('project_responses')
+            .insert([{
+                project_id: projectId,
+                user_id: agentId,
+                response_data: responseData,
+                status: 'pending'
+            }])
+            .select()
+            .single();
+        
+        if (insertError) throw insertError;
+        
+        messageDiv.className = 'message success';
+        messageDiv.textContent = 'Lead créé avec succès!';
+        
+        setTimeout(() => {
+            closeModal('addLeadModal');
+            loadAllLeads();
+        }, 1500);
+        
+    } catch (error) {
+        messageDiv.className = 'message error';
+        messageDiv.textContent = 'Erreur: ' + error.message;
+        console.error('Erreur lors de la création du lead:', error);
+    }
+});
+
 // Initialisation
 checkAuth();
 loadUsers();
