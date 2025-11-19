@@ -253,28 +253,44 @@ let currentImportProjectFields = [];
 async function openImportExcelModal(projectId, projectName) {
     currentImportProjectId = projectId;
     
-    // Charger les champs du projet
-    const { data: fields } = await supabase
-        .from('project_fields')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('order_index');
-    
-    currentImportProjectFields = fields || [];
-    
-    // Afficher le format attendu
-    const formatDiv = document.getElementById('excelFormatColumns');
-    const columnNames = fields.map(f => f.name).join(' | ');
-    formatDiv.innerHTML = `<strong>${columnNames}</strong>`;
-    
-    document.getElementById('importExcelTitle').textContent = `Importer des leads - ${projectName}`;
-    document.getElementById('excelFileInput').value = '';
-    document.getElementById('fileInfo').textContent = '';
-    document.getElementById('importBtn').disabled = true;
-    document.getElementById('importProgress').style.display = 'none';
-    document.getElementById('importErrors').style.display = 'none';
-    
-    openModal('importExcelModal');
+    try {
+        // Charger les champs du projet
+        const { data: fields, error } = await supabase
+            .from('project_fields')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('created_at');
+        
+        if (error) {
+            console.error('Erreur chargement champs:', error);
+            alert('Erreur lors du chargement des champs du projet');
+            return;
+        }
+        
+        if (!fields || fields.length === 0) {
+            alert('Ce projet n\'a pas de champs configurés');
+            return;
+        }
+        
+        currentImportProjectFields = fields;
+        
+        // Afficher le format attendu
+        const formatDiv = document.getElementById('excelFormatColumns');
+        const columnNames = fields.map(f => f.name).join(' | ');
+        formatDiv.innerHTML = `<strong>${columnNames}</strong>`;
+        
+        document.getElementById('importExcelTitle').textContent = `Importer des leads - ${projectName}`;
+        document.getElementById('excelFileInput').value = '';
+        document.getElementById('fileInfo').textContent = '';
+        document.getElementById('importBtn').disabled = true;
+        document.getElementById('importProgress').style.display = 'none';
+        document.getElementById('importErrors').style.display = 'none';
+        
+        openModal('importExcelModal');
+    } catch (err) {
+        console.error('Erreur:', err);
+        alert('Erreur lors de l\'ouverture du modal d\'import');
+    }
 }
 
 // Télécharger le modèle Excel
