@@ -4,6 +4,45 @@ let isEditMode = false;
 let userRole = null;
 let isConseillerMode = false;
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatDateForInput(value) {
+    if (!value) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function formatTimeForInput(value) {
+    if (!value) return '';
+    if (/^\d{2}:\d{2}$/.test(value)) return value.slice(0, 5);
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+function formatDateTimeForInput(value) {
+    if (!value) return '';
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return value;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return localDate.toISOString().slice(0, 16);
+}
+
 // Open lead modal
 async function openLeadModal(leadId, editable = false, conseillerMode = false) {
     try {
@@ -111,6 +150,7 @@ function renderLeadModal() {
     };
     
     const statusInfo = statusConfig[status];
+    const isAdmin = currentLead.current_user_role === 'admin';
     const canEdit = currentLead.current_user_role === 'admin' || 
                     (currentLead.current_user_role === 'agent' && currentLead.user_id === currentLead.current_user_id);
     
@@ -166,7 +206,16 @@ function renderLeadModal() {
                             </div>
                             <div class="info-item">
                                 <div class="info-label">Date de création</div>
-                                <div class="info-value">${new Date(currentLead.created_at).toLocaleString('fr-FR')}</div>
+                                <div class="info-value${isEditMode && isAdmin ? ' editable' : ''}">
+                                    ${isEditMode && isAdmin ? `
+                                        <input
+                                            type="datetime-local"
+                                            id="leadCreatedAtInput"
+                                            class="edit-inline-input"
+                                            value="${formatDateTimeForInput(currentLead.created_at)}"
+                                        />
+                                    ` : escapeHtml(new Date(currentLead.created_at).toLocaleString('fr-FR'))}
+                                </div>
                             </div>
                             <div class="info-item">
                                 <div class="info-label">Statut</div>
@@ -257,44 +306,65 @@ function renderResponseData() {
     
     const data = typeof currentLead.response_data === 'string' 
         ? JSON.parse(currentLead.response_data) 
-        : currentLead.response_data;
-    
+        : (currentLead.response_data || {});
+
     if (!data || Object.keys(data).length === 0) {
         return '<div class="lead-section"><p style="color: rgba(255,255,255,0.5);">Aucune donnée</p></div>';
     }
-    
+
     const items = Object.entries(data).map(([fieldId, value]) => {
         // Find the field name from project_fields
         const field = currentLead.project_fields?.find(f => f.id === fieldId);
         const fieldName = field ? field.name : fieldId;
-        
-        // Format the value for display or editing
+        const fieldType = (field?.type || 'text').toLowerCase();
+
         let displayValue = value;
         if (Array.isArray(value)) {
             displayValue = value.join(', ');
-        } else if (typeof value === 'object') {
+        } else if (typeof value === 'object' && value !== null) {
             displayValue = JSON.stringify(value);
         }
-        
-        // In edit mode, show input fields
+
+        const stringValue = displayValue !== undefined && displayValue !== null ? String(displayValue) : '';
+
         if (isEditMode) {
-            const fieldType = field?.type || 'text';
             let inputHTML = '';
-            
+            const baseAttributes = `class="edit-input" data-field-id="${fieldId}" data-field-type="${fieldType}"`;
+
             if (fieldType === 'textarea') {
-                inputHTML = `<textarea class="edit-input" data-field-id="${fieldId}" rows="3">${displayValue || ''}</textarea>`;
+                inputHTML = `<textarea ${baseAttributes} rows="3">${escapeHtml(stringValue)}</textarea>`;
             } else if (fieldType === 'select' && field?.options) {
                 const options = field.options.map(opt => 
-                    `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`
+                    `<option value="${escapeHtml(opt)}" ${opt === value ? 'selected' : ''}>${escapeHtml(opt)}</option>`
                 ).join('');
-                inputHTML = `<select class="edit-input" data-field-id="${fieldId}">${options}</select>`;
+                inputHTML = `<select ${baseAttributes}>${options}</select>`;
             } else {
-                inputHTML = `<input type="text" class="edit-input" data-field-id="${fieldId}" value="${displayValue || ''}" />`;
+                let inputType = 'text';
+                let inputValue = stringValue;
+
+                if (fieldType === 'number') {
+                    inputType = 'number';
+                } else if (fieldType === 'email') {
+                    inputType = 'email';
+                } else if (fieldType === 'tel') {
+                    inputType = 'tel';
+                } else if (fieldType === 'date') {
+                    inputType = 'date';
+                    inputValue = formatDateForInput(value);
+                } else if (fieldType === 'time') {
+                    inputType = 'time';
+                    inputValue = formatTimeForInput(value);
+                } else if (fieldType === 'datetime' || fieldType === 'datetime-local') {
+                    inputType = 'datetime-local';
+                    inputValue = formatDateTimeForInput(value);
+                }
+
+                inputHTML = `<input type="${inputType}" ${baseAttributes} value="${escapeHtml(inputValue)}" />`;
             }
-            
+
             return `
                 <div class="response-item">
-                    <span class="response-key">${fieldName}</span>
+                    <span class="response-key">${escapeHtml(fieldName)}</span>
                     <div class="response-value editable">
                         ${inputHTML}
                     </div>
@@ -304,13 +374,13 @@ function renderResponseData() {
             // View mode - display only
             return `
                 <div class="response-item">
-                    <span class="response-key">${fieldName}</span>
-                    <span class="response-value">${displayValue}</span>
+                    <span class="response-key">${escapeHtml(fieldName)}</span>
+                    <span class="response-value">${escapeHtml(stringValue)}</span>
                 </div>
             `;
         }
     }).join('');
-    
+
     return `
         <div class="lead-section">
             <div class="section-title">
@@ -427,7 +497,9 @@ function renderConseillerSection() {
             <div class="section-title">
                 <div class="section-icon" style="color: #10b981;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        <path d="M21 15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
                     </svg>
                 </div>
                 Avis Conseiller
@@ -548,24 +620,38 @@ async function saveLeadChanges() {
         
         editInputs.forEach(input => {
             const fieldId = input.getAttribute('data-field-id');
-            updatedData[fieldId] = input.value;
+            if (!fieldId) return;
+            if (input.type === 'checkbox') {
+                updatedData[fieldId] = input.checked;
+            } else {
+                updatedData[fieldId] = input.value;
+            }
         });
         
         // Fusionner avec les données existantes
         const currentData = typeof currentLead.response_data === 'string' 
             ? JSON.parse(currentLead.response_data) 
-            : currentLead.response_data;
+            : (currentLead.response_data || {});
         
         const finalData = { ...currentData, ...updatedData };
-        
+        const updatePayload = {
+            notes: notes,
+            response_data: finalData
+        };
+
+        const createdAtInput = document.getElementById('leadCreatedAtInput');
+        if (createdAtInput && createdAtInput.value) {
+            const parsedDate = new Date(createdAtInput.value);
+            if (!Number.isNaN(parsedDate.getTime())) {
+                updatePayload.created_at = parsedDate.toISOString();
+            }
+        }
+
         const { error } = await supabase
             .from('project_responses')
-            .update({ 
-                notes: notes,
-                response_data: finalData
-            })
+            .update(updatePayload)
             .eq('id', currentLead.id);
-        
+
         if (error) throw error;
         
         alert('Modifications enregistrées avec succès!');
