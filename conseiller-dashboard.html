@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="lead-modal.css">
     <link rel="stylesheet" href="stats-styles.css">
     <link rel="stylesheet" href="stats-advanced.css">
+    <link rel="stylesheet" href="conseiller-projects.css">
+    <link rel="stylesheet" href="conseiller-kpi.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Conseiller Form Styles */
@@ -250,7 +252,6 @@
                         <table class="leads-table">
                             <thead>
                                 <tr>
-                                    <th>Nom</th>
                                     <th>Projet</th>
                                     <th>Agent</th>
                                     <th>Date</th>
@@ -466,34 +467,13 @@
                 <div class="charts-row">
                     <div class="chart-card">
                         <div class="chart-header">
-                            <h3>📊 Leads par Projet (Global)</h3>
-                        </div>
-                        <div id="conseillerProjectsChart" style="padding: 0.5rem 0;">
-                            <!-- Project bars will be loaded here -->
-                        </div>
-                    </div>
-
-                    <div class="chart-card">
-                        <div class="chart-header">
                             <h3>📈 Répartition des Avis</h3>
                         </div>
                         <div class="chart-container">
                             <canvas id="conseillerStatusChart"></canvas>
                         </div>
                     </div>
-                </div>
-
-                <!-- Charts Row 2 -->
-                <div class="charts-row">
-                    <div class="chart-card">
-                        <div class="chart-header">
-                            <h3>📅 Leads par Jour (7 derniers jours)</h3>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="conseillerDailyChart"></canvas>
-                        </div>
-                    </div>
-
+                    
                     <div class="chart-card">
                         <div class="chart-header">
                             <h3>🎯 Performance Mensuelle</h3>
@@ -501,6 +481,16 @@
                         <div class="chart-container">
                             <canvas id="conseillerMonthlyChart"></canvas>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2 -->
+                <div class="chart-card full-width">
+                    <div class="chart-header">
+                        <h3>📅 Leads par Jour (7 derniers jours)</h3>
+                    </div>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="conseillerDailyChart"></canvas>
                     </div>
                 </div>
             </div>

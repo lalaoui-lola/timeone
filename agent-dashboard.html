@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="animations.css">
     <link rel="stylesheet" href="admin-styles.css">
     <link rel="stylesheet" href="lead-modal.css">
+    <link rel="stylesheet" href="agent-kpi.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -78,6 +79,11 @@
 
             <!-- Leads Tab -->
             <div class="tab-content" id="leadsTab">
+                <!-- KPI Cards -->
+                <div class="agent-kpi-grid" id="agentKpiGrid">
+                    <!-- KPI cards will be loaded here -->
+                </div>
+                
                 <div class="content-actions">
                     <div class="search-box">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -105,7 +111,6 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Nom</th>
                                 <th>Projet</th>
                                 <th>Date</th>
                                 <th>Validation</th>

@@ -24,6 +24,18 @@ function setupTabNavigation() {
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(`${tab}Tab`).classList.add('active');
             
+            // Mettre à jour les titres
+            const titles = {
+                projects: { title: 'Projets', subtitle: 'Sélectionnez un projet pour voir les leads validés' },
+                leads: { title: 'Tous les Leads', subtitle: 'Gérer et valider les leads des agents' },
+                stats: { title: 'Statistiques', subtitle: 'Vue d\'ensemble des performances' }
+            };
+            
+            if (titles[tab]) {
+                document.getElementById('pageTitle').textContent = titles[tab].title;
+                document.getElementById('pageSubtitle').textContent = titles[tab].subtitle;
+            }
+            
             // Charger les données selon l'onglet
             if (tab === 'leads') {
                 await loadAllLeads();
@@ -101,17 +113,6 @@ async function loadAllLeads() {
             
             leads.forEach(lead => {
                 lead.agent_email = profileMap[lead.user_id] || 'N/A';
-                
-                // Construire le nom complet
-                if (lead.nom && lead.prenom) {
-                    lead.name = `${lead.prenom} ${lead.nom}`;
-                } else if (lead.nom) {
-                    lead.name = lead.nom;
-                } else if (lead.prenom) {
-                    lead.name = lead.prenom;
-                } else if (!lead.name) {
-                    lead.name = 'N/A';
-                }
             });
         }
         
@@ -166,7 +167,6 @@ function displayLeads(leads) {
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><strong>${lead.name || 'N/A'}</strong></td>
             <td>${lead.projects?.name || 'N/A'}</td>
             <td>${lead.agent_email || 'N/A'}</td>
             <td>${new Date(lead.created_at).toLocaleDateString('fr-FR')}</td>
@@ -666,21 +666,26 @@ async function displayProjectCards(projects) {
         
         card.innerHTML = `
             <div class="project-header">
+                <div class="project-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
                 <div>
                     <h3 class="project-title">${project.name}</h3>
-                    <p class="project-description">${project.description || 'Aucune description'}</p>
+                    <p class="project-description">${project.description || 'Aucune description disponible pour ce projet'}</p>
                 </div>
             </div>
             <div class="project-meta">
                 <span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
                         <circle cx="9" cy="7" r="4"></circle>
                     </svg>
-                    ${totalValidated} Leads validés
+                    ${totalValidated} Leads
                 </span>
                 <span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                     ${withConseillerStatus} Traités
@@ -813,29 +818,6 @@ async function openLeadModalConseiller(leadId) {
     // Open modal with conseiller edit mode
     await openLeadModal(leadId, false, true);
 }
-
-// ========== NAVIGATION ==========
-
-document.querySelectorAll('.nav-item').forEach(button => {
-    button.addEventListener('click', () => {
-        const tab = button.dataset.tab;
-        
-        document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        document.getElementById(tab + 'Tab').classList.add('active');
-        
-        const titles = {
-            projects: { title: 'Projets', subtitle: 'Sélectionnez un projet pour voir les leads validés' },
-            leads: { title: 'Tous les Leads', subtitle: 'Gérer et valider les leads des agents' },
-            stats: { title: 'Statistiques', subtitle: 'Vue d\'ensemble des performances' }
-        };
-        
-        document.getElementById('pageTitle').textContent = titles[tab].title;
-        document.getElementById('pageSubtitle').textContent = titles[tab].subtitle;
-    });
-});
 
 // ========== ADVANCED FILTERS & STATS ==========
 
@@ -1063,12 +1045,5 @@ function updateConseillerAdvancedProjectsChart(labels, data, colors) {
     });
 }
 
-// ========== INITIALISATION ==========
-
-async function init() {
-    await checkAuth();
-    await loadProjects();
-    await loadAllLeads();
-}
-
-init();
+// Note: Initialization is handled by DOMContentLoaded event listener above
+// No need for separate init() call to avoid duplicate loading

@@ -880,26 +880,11 @@ async function loadAllLeads() {
         window.profilesData = profilesData;
         
         // Combiner les données manuellement
-        const leadsWithDetails = leads.map(lead => {
-            // Construire le nom complet à partir de nom et prenom
-            let fullName = 'N/A';
-            if (lead.nom && lead.prenom) {
-                fullName = `${lead.prenom} ${lead.nom}`;
-            } else if (lead.nom) {
-                fullName = lead.nom;
-            } else if (lead.prenom) {
-                fullName = lead.prenom;
-            } else if (lead.name) {
-                fullName = lead.name;
-            }
-            
-            return {
-                ...lead,
-                name: fullName,
-                project_name: projectsData?.find(p => p.id === lead.project_id)?.name || 'N/A',
-                agent_email: profilesData?.find(p => p.user_id === lead.user_id)?.email || 'N/A'
-            };
-        });
+        const leadsWithDetails = leads.map(lead => ({
+            ...lead,
+            project_name: projectsData?.find(p => p.id === lead.project_id)?.name || 'N/A',
+            agent_email: profilesData?.find(p => p.user_id === lead.user_id)?.email || 'N/A'
+        }));
         
         // Charger les filtres
         await loadFilterOptions(projectsData, profilesData);
@@ -928,7 +913,7 @@ async function loadAllLeads() {
         tbody.innerHTML = '';
         
         if (!leadsWithDetails || leadsWithDetails.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead</td></tr>';
             return;
         }
         
@@ -970,7 +955,6 @@ async function loadAllLeads() {
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><strong>${lead.name || 'N/A'}</strong></td>
             <td>${lead.project_name}</td>
             <td>${lead.agent_email}</td>
             <td>${new Date(lead.created_at).toLocaleDateString('fr-FR')}</td>
@@ -1208,32 +1192,17 @@ async function applyFilters() {
 
 // Afficher les leads filtrés
 function displayFilteredLeads(leads) {
-    const leadsWithDetails = leads.map(lead => {
-        // Construire le nom complet à partir de nom et prenom
-        let fullName = 'N/A';
-        if (lead.nom && lead.prenom) {
-            fullName = `${lead.prenom} ${lead.nom}`;
-        } else if (lead.nom) {
-            fullName = lead.nom;
-        } else if (lead.prenom) {
-            fullName = lead.prenom;
-        } else if (lead.name) {
-            fullName = lead.name;
-        }
-        
-        return {
-            ...lead,
-            name: fullName,
-            project_name: window.projectsData?.find(p => p.id === lead.project_id)?.name || 'N/A',
-            agent_email: window.profilesData?.find(p => p.user_id === lead.user_id)?.email || 'N/A'
-        };
-    });
+    const leadsWithDetails = leads.map(lead => ({
+        ...lead,
+        project_name: window.projectsData?.find(p => p.id === lead.project_id)?.name || 'N/A',
+        agent_email: window.profilesData?.find(p => p.user_id === lead.user_id)?.email || 'N/A'
+    }));
     
     const tbody = document.getElementById('leadsTableBody');
     tbody.innerHTML = '';
     
     if (!leadsWithDetails || leadsWithDetails.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead trouvé</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead trouvé</td></tr>';
         return;
     }
     
@@ -1276,7 +1245,6 @@ function displayFilteredLeads(leads) {
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><strong>${lead.name || 'N/A'}</strong></td>
             <td>${lead.project_name}</td>
             <td>${lead.agent_email}</td>
             <td>${new Date(lead.created_at).toLocaleDateString('fr-FR')}</td>
