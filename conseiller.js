@@ -566,7 +566,8 @@ async function loadConseillerProjectsFilter() {
 
 function applyConseillerFilters() {
     const projectFilter = document.getElementById('filterConseillerProject').value;
-    const dateFilter = document.getElementById('filterConseillerDate').value;
+    const dateDebutFilter = document.getElementById('filterConseillerDateDebut').value;
+    const dateFinFilter = document.getElementById('filterConseillerDateFin').value;
     
     let filteredLeads = [...allLeadsData];
     
@@ -575,11 +576,19 @@ function applyConseillerFilters() {
         filteredLeads = filteredLeads.filter(lead => lead.project_id === projectFilter);
     }
     
-    // Filtre par date
-    if (dateFilter) {
+    // Filtre par date de début
+    if (dateDebutFilter) {
         filteredLeads = filteredLeads.filter(lead => {
             const leadDate = new Date(lead.created_at).toISOString().split('T')[0];
-            return leadDate === dateFilter;
+            return leadDate >= dateDebutFilter;
+        });
+    }
+    
+    // Filtre par date de fin
+    if (dateFinFilter) {
+        filteredLeads = filteredLeads.filter(lead => {
+            const leadDate = new Date(lead.created_at).toISOString().split('T')[0];
+            return leadDate <= dateFinFilter;
         });
     }
     
@@ -589,7 +598,8 @@ function applyConseillerFilters() {
 
 function clearConseillerFilters() {
     document.getElementById('filterConseillerProject').value = '';
-    document.getElementById('filterConseillerDate').value = '';
+    document.getElementById('filterConseillerDateDebut').value = '';
+    document.getElementById('filterConseillerDateFin').value = '';
     displayLeads(allLeadsData);
     updateStats(allLeadsData);
 }
