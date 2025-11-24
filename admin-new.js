@@ -913,7 +913,7 @@ async function loadAllLeads() {
         tbody.innerHTML = '';
         
         if (!leadsWithDetails || leadsWithDetails.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead</td></tr>';
             return;
         }
         
@@ -955,6 +955,7 @@ async function loadAllLeads() {
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
+            <td><strong>${lead.name || 'N/A'}</strong></td>
             <td>${lead.project_name}</td>
             <td>${lead.agent_email}</td>
             <td>${new Date(lead.created_at).toLocaleDateString('fr-FR')}</td>
@@ -1202,7 +1203,7 @@ function displayFilteredLeads(leads) {
     tbody.innerHTML = '';
     
     if (!leadsWithDetails || leadsWithDetails.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead trouvé</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead trouvé</td></tr>';
         return;
     }
     
@@ -1245,6 +1246,7 @@ function displayFilteredLeads(leads) {
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
+            <td><strong>${lead.name || 'N/A'}</strong></td>
             <td>${lead.project_name}</td>
             <td>${lead.agent_email}</td>
             <td>${new Date(lead.created_at).toLocaleDateString('fr-FR')}</td>

@@ -436,6 +436,7 @@ async function loadLeads() {
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
+            <td><strong>${lead.name || 'N/A'}</strong></td>
             <td>${lead.projects?.name || 'N/A'}</td>
             <td>${new Date(lead.created_at).toLocaleString('fr-FR')}</td>
             <td>

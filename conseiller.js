@@ -155,6 +155,7 @@ function displayLeads(leads) {
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
+            <td><strong>${lead.name || 'N/A'}</strong></td>
             <td>${lead.projects?.name || 'N/A'}</td>
             <td>${lead.agent_email || 'N/A'}</td>
             <td>${new Date(lead.created_at).toLocaleDateString('fr-FR')}</td>
