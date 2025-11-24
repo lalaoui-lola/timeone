@@ -374,6 +374,19 @@ async function loadLeads() {
     
     console.log('✅ Leads chargés:', leads.length);
     
+    // Construire le nom complet pour chaque lead
+    leads.forEach(lead => {
+        if (lead.nom && lead.prenom) {
+            lead.name = `${lead.prenom} ${lead.nom}`;
+        } else if (lead.nom) {
+            lead.name = lead.nom;
+        } else if (lead.prenom) {
+            lead.name = lead.prenom;
+        } else if (!lead.name) {
+            lead.name = 'N/A';
+        }
+    });
+    
     // Apply search filter (client-side)
     let filteredLeads = leads;
     if (searchTerm) {

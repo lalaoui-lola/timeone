@@ -101,6 +101,17 @@ async function loadAllLeads() {
             
             leads.forEach(lead => {
                 lead.agent_email = profileMap[lead.user_id] || 'N/A';
+                
+                // Construire le nom complet
+                if (lead.nom && lead.prenom) {
+                    lead.name = `${lead.prenom} ${lead.nom}`;
+                } else if (lead.nom) {
+                    lead.name = lead.nom;
+                } else if (lead.prenom) {
+                    lead.name = lead.prenom;
+                } else if (!lead.name) {
+                    lead.name = 'N/A';
+                }
             });
         }
         

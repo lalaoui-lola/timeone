@@ -880,11 +880,26 @@ async function loadAllLeads() {
         window.profilesData = profilesData;
         
         // Combiner les données manuellement
-        const leadsWithDetails = leads.map(lead => ({
-            ...lead,
-            project_name: projectsData?.find(p => p.id === lead.project_id)?.name || 'N/A',
-            agent_email: profilesData?.find(p => p.user_id === lead.user_id)?.email || 'N/A'
-        }));
+        const leadsWithDetails = leads.map(lead => {
+            // Construire le nom complet à partir de nom et prenom
+            let fullName = 'N/A';
+            if (lead.nom && lead.prenom) {
+                fullName = `${lead.prenom} ${lead.nom}`;
+            } else if (lead.nom) {
+                fullName = lead.nom;
+            } else if (lead.prenom) {
+                fullName = lead.prenom;
+            } else if (lead.name) {
+                fullName = lead.name;
+            }
+            
+            return {
+                ...lead,
+                name: fullName,
+                project_name: projectsData?.find(p => p.id === lead.project_id)?.name || 'N/A',
+                agent_email: profilesData?.find(p => p.user_id === lead.user_id)?.email || 'N/A'
+            };
+        });
         
         // Charger les filtres
         await loadFilterOptions(projectsData, profilesData);
@@ -1193,11 +1208,26 @@ async function applyFilters() {
 
 // Afficher les leads filtrés
 function displayFilteredLeads(leads) {
-    const leadsWithDetails = leads.map(lead => ({
-        ...lead,
-        project_name: window.projectsData?.find(p => p.id === lead.project_id)?.name || 'N/A',
-        agent_email: window.profilesData?.find(p => p.user_id === lead.user_id)?.email || 'N/A'
-    }));
+    const leadsWithDetails = leads.map(lead => {
+        // Construire le nom complet à partir de nom et prenom
+        let fullName = 'N/A';
+        if (lead.nom && lead.prenom) {
+            fullName = `${lead.prenom} ${lead.nom}`;
+        } else if (lead.nom) {
+            fullName = lead.nom;
+        } else if (lead.prenom) {
+            fullName = lead.prenom;
+        } else if (lead.name) {
+            fullName = lead.name;
+        }
+        
+        return {
+            ...lead,
+            name: fullName,
+            project_name: window.projectsData?.find(p => p.id === lead.project_id)?.name || 'N/A',
+            agent_email: window.profilesData?.find(p => p.user_id === lead.user_id)?.email || 'N/A'
+        };
+    });
     
     const tbody = document.getElementById('leadsTableBody');
     tbody.innerHTML = '';
