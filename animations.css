@@ -1,9 +1,50 @@
 /* ========================================
    ANIMATIONS GLOBALES - TimeOne
    Couleurs: #F7C7BB (primary), #175C64 (secondary)
+   Effets Glass Modernes & Animations Fluides
    ======================================== */
 
 /* ========== ANIMATIONS DE BASE ========== */
+
+/* Shimmer Effect */
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+/* Glow Pulse */
+@keyframes glowPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(247, 199, 187, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(247, 199, 187, 0.6), 0 0 60px rgba(23, 92, 100, 0.3);
+    }
+}
+
+/* Float Animation */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Rotate Glow */
+@keyframes rotateGlow {
+    0% {
+        filter: hue-rotate(0deg);
+    }
+    100% {
+        filter: hue-rotate(360deg);
+    }
+}
 
 /* Fade In */
 @keyframes fadeIn {

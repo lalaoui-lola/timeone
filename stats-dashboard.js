@@ -2,13 +2,14 @@
 // Supabase client is initialized in supabase-config.js
 
 // Chart instances
-let leadsEvolutionChart, validationRateChart, projectsChart, dailyLeadsChart;
+let leadsEvolutionChart, validationRateChart, projectsChart, dailyLeadsChart, advancedProjectsChart;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
     await checkAuth();
     await loadAllStats();
     setupEventListeners();
+    initializeAdvancedFilters();
 });
 
 // Check authentication
@@ -750,4 +751,223 @@ function animatePercentage(id, start, end, duration) {
         }
         element.textContent = current.toFixed(1) + '%';
     }, 16);
+}
+
+// ========== ADVANCED FILTERS & STATS ==========
+
+// Initialize advanced filters
+function initializeAdvancedFilters() {
+    // Populate year filter
+    const yearSelect = document.getElementById('filterYear');
+    const currentYear = new Date().getFullYear();
+    const startYear = 2020; // Adjust as needed
+    
+    yearSelect.innerHTML = '<option value="">Toutes les années</option>';
+    for (let year = currentYear; year >= startYear; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        if (year === currentYear) {
+            option.selected = true;
+        }
+        yearSelect.appendChild(option);
+    }
+    
+    // Set current month
+    const monthSelect = document.getElementById('filterMonth');
+    const currentMonth = new Date().getMonth() + 1;
+    monthSelect.value = currentMonth;
+    
+    // Load initial data
+    loadAdvancedStats();
+}
+
+// Apply advanced filters
+async function applyAdvancedFilters() {
+    await loadAdvancedStats();
+}
+
+// Clear advanced filters
+async function clearAdvancedFilters() {
+    document.getElementById('filterYear').value = '';
+    document.getElementById('filterMonth').value = '';
+    await loadAdvancedStats();
+}
+
+// Load advanced statistics
+async function loadAdvancedStats() {
+    const year = document.getElementById('filterYear').value;
+    const month = document.getElementById('filterMonth').value;
+    
+    try {
+        // Build query
+        let query = supabase.from('project_responses').select('*');
+        
+        // Apply filters
+        if (year) {
+            const startDate = new Date(year, month ? parseInt(month) - 1 : 0, 1);
+            const endDate = month 
+                ? new Date(year, parseInt(month), 0, 23, 59, 59)
+                : new Date(year, 11, 31, 23, 59, 59);
+            
+            query = query
+                .gte('created_at', startDate.toISOString())
+                .lte('created_at', endDate.toISOString());
+        } else if (month) {
+            // If only month is selected, use current year
+            const currentYear = new Date().getFullYear();
+            const startDate = new Date(currentYear, parseInt(month) - 1, 1);
+            const endDate = new Date(currentYear, parseInt(month), 0, 23, 59, 59);
+            
+            query = query
+                .gte('created_at', startDate.toISOString())
+                .lte('created_at', endDate.toISOString());
+        }
+        
+        const { data: leads, error } = await query;
+        
+        if (error) throw error;
+        
+        // Update period label
+        updatePeriodLabel(year, month);
+        
+        // Update total count
+        document.getElementById('periodLeadsCount').textContent = leads.length;
+        
+        // Load projects data
+        const { data: projects } = await supabase
+            .from('projects')
+            .select('id, name');
+        
+        // Calculate leads by project
+        const projectStats = {};
+        projects.forEach(project => {
+            projectStats[project.id] = {
+                name: project.name,
+                count: 0
+            };
+        });
+        
+        leads.forEach(lead => {
+            if (projectStats[lead.project_id]) {
+                projectStats[lead.project_id].count++;
+            }
+        });
+        
+        // Prepare chart data
+        const projectNames = [];
+        const projectCounts = [];
+        const projectColors = [];
+        
+        Object.values(projectStats).forEach((project, index) => {
+            projectNames.push(project.name);
+            projectCounts.push(project.count);
+            // Generate colors
+            const hue = (index * 137.5) % 360;
+            projectColors.push(`hsla(${hue}, 70%, 60%, 0.8)`);
+        });
+        
+        // Update chart
+        updateAdvancedProjectsChart(projectNames, projectCounts, projectColors);
+        
+    } catch (error) {
+        console.error('Erreur chargement stats avancées:', error);
+    }
+}
+
+// Update period label
+function updatePeriodLabel(year, month) {
+    const periodLabel = document.getElementById('periodLabel');
+    const monthNames = [
+        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    ];
+    
+    if (year && month) {
+        periodLabel.textContent = `${monthNames[parseInt(month) - 1]} ${year}`;
+    } else if (year) {
+        periodLabel.textContent = `Année ${year}`;
+    } else if (month) {
+        const currentYear = new Date().getFullYear();
+        periodLabel.textContent = `${monthNames[parseInt(month) - 1]} ${currentYear}`;
+    } else {
+        periodLabel.textContent = 'Toutes les périodes';
+    }
+}
+
+// Update advanced projects chart
+function updateAdvancedProjectsChart(labels, data, colors) {
+    const ctx = document.getElementById('advancedProjectsChart');
+    
+    if (advancedProjectsChart) {
+        advancedProjectsChart.destroy();
+    }
+    
+    advancedProjectsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Nombre de Leads',
+                data: data,
+                backgroundColor: colors,
+                borderColor: colors.map(color => color.replace('0.8', '1')),
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#0E3A40',
+                    bodyColor: '#0E3A40',
+                    borderColor: '#F7C7BB',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            return ' ' + context.parsed.y + ' lead(s)';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        color: 'rgba(14, 58, 64, 0.7)',
+                        font: {
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(247, 199, 187, 0.15)',
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: 'rgba(14, 58, 64, 0.7)',
+                        font: {
+                            size: 11
+                        },
+                        maxRotation: 45,
+                        minRotation: 0
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
 }

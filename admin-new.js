@@ -483,7 +483,7 @@ async function processExcelImport() {
         
         setTimeout(() => {
             closeModal('importExcelModal');
-            loadAllLeads();
+            reloadLeadsWithFilters();
         }, 2000);
         
     } catch (error) {
@@ -1097,9 +1097,24 @@ async function validateLead(leadId, newStatus) {
         
         if (error) throw error;
         
-        loadAllLeads();
+        reloadLeadsWithFilters();
     } catch (error) {
         alert('Erreur lors de la validation: ' + error.message);
+    }
+}
+
+// Helper function to reload leads while preserving filters
+function reloadLeadsWithFilters() {
+    const searchTerm = document.getElementById('searchLeads')?.value || '';
+    const projectId = document.getElementById('filterProject')?.value || '';
+    const agentId = document.getElementById('filterAgent')?.value || '';
+    const dateFilter = document.getElementById('filterDate')?.value || '';
+    
+    // If any filter is active, apply filters; otherwise load all leads
+    if (searchTerm || projectId || agentId || dateFilter) {
+        applyFilters();
+    } else {
+        loadAllLeads();
     }
 }
 
@@ -1187,7 +1202,7 @@ function displayFilteredLeads(leads) {
     tbody.innerHTML = '';
     
     if (!leadsWithDetails || leadsWithDetails.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead trouvé</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead trouvé</td></tr>';
         return;
     }
     
@@ -1201,6 +1216,32 @@ function displayFilteredLeads(leads) {
         };
         
         const statusInfo = statusConfig[status] || statusConfig.pending;
+        
+        // Avis conseiller
+        const conseillerStatus = lead.conseiller_status;
+        const conseillerComment = lead.conseiller_comment;
+        
+        const conseillerStatusConfig = {
+            'OK': { label: '✅ OK', color: '#10b981' },
+            'Rappeler': { label: '📞 Rappeler', color: '#f59e0b' },
+            'No OK': { label: '❌ No OK', color: '#ef4444' }
+        };
+        
+        let conseillerAvis = '';
+        if (conseillerStatus) {
+            const statusInf = conseillerStatusConfig[conseillerStatus];
+            const rgb = statusInf.color === '#10b981' ? '16, 185, 129' : statusInf.color === '#ef4444' ? '239, 68, 68' : '245, 158, 11';
+            conseillerAvis = `
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <span class="role-badge" style="background: rgba(${rgb}, 0.1); border-color: ${statusInf.color}; color: ${statusInf.color}; display: inline-block; width: fit-content;">
+                        ${statusInf.label}
+                    </span>
+                    ${conseillerComment ? `<div style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4; max-width: 250px;">${conseillerComment.substring(0, 80)}${conseillerComment.length > 80 ? '...' : ''}</div>` : ''}
+                </div>
+            `;
+        } else {
+            conseillerAvis = '<span style="color: rgba(255,255,255,0.4); font-style: italic; font-size: 0.9rem;">Non traité</span>';
+        }
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -1229,6 +1270,7 @@ function displayFilteredLeads(leads) {
                     </button>
                 `}
             </td>
+            <td>${conseillerAvis}</td>
             <td>
                 <div class="action-buttons">
                     ${status === 'pending' ? `
@@ -1309,7 +1351,7 @@ function uploadAudio(leadId) {
                 if (updateError) throw updateError;
                 
                 alert('Fichier audio ajouté avec succès!');
-                loadAllLeads();
+                reloadLeadsWithFilters();
                 
             } catch (error) {
                 console.error('Erreur upload audio:', error);
@@ -1332,7 +1374,7 @@ async function removeAudio(leadId) {
         
         if (error) throw error;
         
-        loadAllLeads();
+        reloadLeadsWithFilters();
     } catch (error) {
         console.error('Erreur suppression audio:', error);
         alert('Erreur: ' + error.message);
@@ -1353,22 +1395,17 @@ async function deleteLead(leadId) {
         
         if (error) throw error;
         
-        loadAllLeads();
+        reloadLeadsWithFilters();
     } catch (error) {
         alert('Erreur lors de la suppression: ' + error.message);
     }
 }
 
-// Recherche de leads
+// Recherche de leads - utilise applyFilters pour préserver tous les filtres
 if (document.getElementById('searchLeads')) {
     document.getElementById('searchLeads').addEventListener('input', (e) => {
-        const search = e.target.value.toLowerCase();
-        const rows = document.querySelectorAll('#leadsTableBody tr');
-        
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(search) ? '' : 'none';
-        });
+        // Use applyFilters to ensure all filters work together
+        reloadLeadsWithFilters();
     });
 }
 
@@ -1597,7 +1634,7 @@ document.getElementById('addLeadForm').addEventListener('submit', async (e) => {
         
         setTimeout(() => {
             closeModal('addLeadModal');
-            loadAllLeads();
+            reloadLeadsWithFilters();
         }, 1500);
         
     } catch (error) {

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="admin-styles.css">
     <link rel="stylesheet" href="lead-modal.css">
     <link rel="stylesheet" href="stats-styles.css">
+    <link rel="stylesheet" href="stats-advanced.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Conseiller Form Styles */
@@ -362,11 +363,109 @@
                     </div>
                 </div>
 
+                <!-- Advanced Stats Card with Filters -->
+                <div class="chart-card full-width advanced-stats-card" data-animation="fade-in" style="animation-delay: 0.2s; margin-bottom: 2rem;">
+                    <div class="chart-header">
+                        <h3>📊 Statistiques Avancées par Période</h3>
+                        <div class="advanced-filters">
+                            <div class="filter-group">
+                                <label>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                                    </svg>
+                                    Année
+                                </label>
+                                <select id="conseillerFilterYear" class="mini-filter">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                                    </svg>
+                                    Mois
+                                </label>
+                                <select id="conseillerFilterMonth" class="mini-filter">
+                                    <option value="">Tous les mois</option>
+                                    <option value="1">Janvier</option>
+                                    <option value="2">Février</option>
+                                    <option value="3">Mars</option>
+                                    <option value="4">Avril</option>
+                                    <option value="5">Mai</option>
+                                    <option value="6">Juin</option>
+                                    <option value="7">Juillet</option>
+                                    <option value="8">Août</option>
+                                    <option value="9">Septembre</option>
+                                    <option value="10">Octobre</option>
+                                    <option value="11">Novembre</option>
+                                    <option value="12">Décembre</option>
+                                </select>
+                            </div>
+                            <div class="filter-actions">
+                                <button class="filter-btn apply-btn" onclick="applyConseillerAdvancedFilters()" title="Appliquer les filtres">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </button>
+                                <button class="filter-btn clear-btn" onclick="clearConseillerAdvancedFilters()" title="Supprimer les filtres">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="advanced-stats-content">
+                        <!-- Summary Box -->
+                        <div class="period-summary">
+                            <div class="summary-item">
+                                <div class="summary-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="8.5" cy="7" r="4"></circle>
+                                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                                    </svg>
+                                </div>
+                                <div class="summary-content">
+                                    <span class="summary-label">Leads pour la période</span>
+                                    <span class="summary-value" id="conseillerPeriodLeadsCount">0</span>
+                                </div>
+                            </div>
+                            <div class="period-label" id="conseillerPeriodLabel">Toutes les périodes</div>
+                        </div>
+
+                        <!-- Projects Chart -->
+                        <div class="projects-chart-container">
+                            <h4 class="chart-subtitle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                                </svg>
+                                Répartition par Projet
+                            </h4>
+                            <div class="chart-container" style="height: 350px;">
+                                <canvas id="conseillerAdvancedProjectsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Charts Row 1 -->
                 <div class="charts-row">
                     <div class="chart-card">
                         <div class="chart-header">
-                            <h3>📊 Leads par Projet</h3>
+                            <h3>📊 Leads par Projet (Global)</h3>
                         </div>
                         <div id="conseillerProjectsChart" style="padding: 0.5rem 0;">
                             <!-- Project bars will be loaded here -->

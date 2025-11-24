@@ -1,6 +1,7 @@
 // Conseiller Dashboard JavaScript
 let currentUser = null;
 let currentProjectId = null;
+let conseillerAdvancedProjectsChart = null;
 
 // ========== INITIALISATION ==========
 
@@ -28,6 +29,7 @@ function setupTabNavigation() {
                 await loadAllLeads();
             } else if (tab === 'stats') {
                 await loadConseillerStats();
+                initializeConseillerAdvancedFilters();
             }
         });
     });
@@ -822,6 +824,232 @@ document.querySelectorAll('.nav-item').forEach(button => {
         document.getElementById('pageSubtitle').textContent = titles[tab].subtitle;
     });
 });
+
+// ========== ADVANCED FILTERS & STATS ==========
+
+// Initialize conseiller advanced filters
+function initializeConseillerAdvancedFilters() {
+    // Populate year filter
+    const yearSelect = document.getElementById('conseillerFilterYear');
+    if (!yearSelect) return;
+    
+    const currentYear = new Date().getFullYear();
+    const startYear = 2020;
+    
+    yearSelect.innerHTML = '<option value="">Toutes les années</option>';
+    for (let year = currentYear; year >= startYear; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        if (year === currentYear) {
+            option.selected = true;
+        }
+        yearSelect.appendChild(option);
+    }
+    
+    // Set current month
+    const monthSelect = document.getElementById('conseillerFilterMonth');
+    const currentMonth = new Date().getMonth() + 1;
+    monthSelect.value = currentMonth;
+    
+    // Load initial data
+    loadConseillerAdvancedStats();
+}
+
+// Apply conseiller advanced filters
+async function applyConseillerAdvancedFilters() {
+    await loadConseillerAdvancedStats();
+}
+
+// Clear conseiller advanced filters
+async function clearConseillerAdvancedFilters() {
+    document.getElementById('conseillerFilterYear').value = '';
+    document.getElementById('conseillerFilterMonth').value = '';
+    await loadConseillerAdvancedStats();
+}
+
+// Load conseiller advanced statistics
+async function loadConseillerAdvancedStats() {
+    const year = document.getElementById('conseillerFilterYear')?.value;
+    const month = document.getElementById('conseillerFilterMonth')?.value;
+    
+    try {
+        // Build query - only validated leads for conseiller
+        let query = supabase
+            .from('project_responses')
+            .select('*')
+            .eq('status', 'validated');
+        
+        // Apply filters
+        if (year) {
+            const startDate = new Date(year, month ? parseInt(month) - 1 : 0, 1);
+            const endDate = month 
+                ? new Date(year, parseInt(month), 0, 23, 59, 59)
+                : new Date(year, 11, 31, 23, 59, 59);
+            
+            query = query
+                .gte('created_at', startDate.toISOString())
+                .lte('created_at', endDate.toISOString());
+        } else if (month) {
+            const currentYear = new Date().getFullYear();
+            const startDate = new Date(currentYear, parseInt(month) - 1, 1);
+            const endDate = new Date(currentYear, parseInt(month), 0, 23, 59, 59);
+            
+            query = query
+                .gte('created_at', startDate.toISOString())
+                .lte('created_at', endDate.toISOString());
+        }
+        
+        const { data: leads, error } = await query;
+        
+        if (error) throw error;
+        
+        // Update period label
+        updateConseillerPeriodLabel(year, month);
+        
+        // Update total count
+        document.getElementById('conseillerPeriodLeadsCount').textContent = leads.length;
+        
+        // Load projects data
+        const { data: projects } = await supabase
+            .from('projects')
+            .select('id, name');
+        
+        // Calculate leads by project
+        const projectStats = {};
+        projects.forEach(project => {
+            projectStats[project.id] = {
+                name: project.name,
+                count: 0
+            };
+        });
+        
+        leads.forEach(lead => {
+            if (projectStats[lead.project_id]) {
+                projectStats[lead.project_id].count++;
+            }
+        });
+        
+        // Prepare chart data
+        const projectNames = [];
+        const projectCounts = [];
+        const projectColors = [];
+        
+        Object.values(projectStats).forEach((project, index) => {
+            projectNames.push(project.name);
+            projectCounts.push(project.count);
+            // Generate colors
+            const hue = (index * 137.5) % 360;
+            projectColors.push(`hsla(${hue}, 70%, 60%, 0.8)`);
+        });
+        
+        // Update chart
+        updateConseillerAdvancedProjectsChart(projectNames, projectCounts, projectColors);
+        
+    } catch (error) {
+        console.error('Erreur chargement stats avancées conseiller:', error);
+    }
+}
+
+// Update conseiller period label
+function updateConseillerPeriodLabel(year, month) {
+    const periodLabel = document.getElementById('conseillerPeriodLabel');
+    if (!periodLabel) return;
+    
+    const monthNames = [
+        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    ];
+    
+    if (year && month) {
+        periodLabel.textContent = `${monthNames[parseInt(month) - 1]} ${year}`;
+    } else if (year) {
+        periodLabel.textContent = `Année ${year}`;
+    } else if (month) {
+        const currentYear = new Date().getFullYear();
+        periodLabel.textContent = `${monthNames[parseInt(month) - 1]} ${currentYear}`;
+    } else {
+        periodLabel.textContent = 'Toutes les périodes';
+    }
+}
+
+// Update conseiller advanced projects chart
+function updateConseillerAdvancedProjectsChart(labels, data, colors) {
+    const ctx = document.getElementById('conseillerAdvancedProjectsChart');
+    if (!ctx) return;
+    
+    if (conseillerAdvancedProjectsChart) {
+        conseillerAdvancedProjectsChart.destroy();
+    }
+    
+    conseillerAdvancedProjectsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Nombre de Leads',
+                data: data,
+                backgroundColor: colors,
+                borderColor: colors.map(color => color.replace('0.8', '1')),
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#0E3A40',
+                    bodyColor: '#0E3A40',
+                    borderColor: '#F7C7BB',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            return ' ' + context.parsed.y + ' lead(s)';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        color: 'rgba(14, 58, 64, 0.7)',
+                        font: {
+                            size: 11
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(247, 199, 187, 0.15)',
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: 'rgba(14, 58, 64, 0.7)',
+                        font: {
+                            size: 11
+                        },
+                        maxRotation: 45,
+                        minRotation: 0
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
 
 // ========== INITIALISATION ==========
 

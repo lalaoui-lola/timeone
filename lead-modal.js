@@ -660,8 +660,11 @@ async function saveLeadChanges() {
         // Reload lead data
         await openLeadModal(currentLead.id, false);
         
-        // Refresh parent page
-        if (typeof loadAllLeads === 'function') {
+        // Refresh parent page with filters preserved
+        if (typeof applyFilters === 'function') {
+            // If applyFilters exists (admin page), use it to preserve filters
+            applyFilters();
+        } else if (typeof loadAllLeads === 'function') {
             loadAllLeads();
         }
         if (typeof loadLeads === 'function') {
@@ -706,7 +709,10 @@ async function saveConseillerComment() {
         if (typeof loadProjectLeads === 'function' && typeof currentProjectId !== 'undefined' && currentProjectId) {
             loadProjectLeads(currentProjectId);
         }
-        if (typeof loadAllLeads === 'function') {
+        if (typeof applyFilters === 'function') {
+            // If applyFilters exists (admin page), use it to preserve filters
+            applyFilters();
+        } else if (typeof loadAllLeads === 'function') {
             loadAllLeads();
         }
         

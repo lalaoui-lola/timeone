@@ -1,0 +1,275 @@
+/* Advanced Stats Card Styles */
+
+.advanced-stats-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(238, 242, 242, 0.9) 100%);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(247, 199, 187, 0.4);
+    border-radius: 20px;
+    padding: 0;
+    box-shadow: 0 8px 32px rgba(23, 92, 100, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+}
+
+.advanced-stats-card .chart-header {
+    padding: 2rem;
+    border-bottom: 1px solid rgba(247, 199, 187, 0.25);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    background: linear-gradient(135deg, rgba(247, 199, 187, 0.15) 0%, rgba(255, 255, 255, 0.3) 100%);
+}
+
+.advanced-filters {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(14, 58, 64, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.filter-group label svg {
+    color: rgba(247, 199, 187, 0.8);
+}
+
+.mini-filter {
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(247, 199, 187, 0.35);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    color: rgba(14, 58, 64, 0.85);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 150px;
+    box-shadow: 0 2px 8px rgba(247, 199, 187, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.mini-filter:hover {
+    background: rgba(247, 199, 187, 0.15);
+    border-color: rgba(247, 199, 187, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(247, 199, 187, 0.2);
+}
+
+.mini-filter:focus {
+    outline: none;
+    border-color: #F7C7BB;
+    box-shadow: 0 0 0 3px rgba(247, 199, 187, 0.2);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.apply-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.apply-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.clear-btn {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.clear-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+}
+
+.filter-btn:active {
+    transform: translateY(-1px) scale(1);
+}
+
+/* Advanced Stats Content */
+.advanced-stats-content {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Period Summary */
+.period-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(247, 199, 187, 0.2) 0%, rgba(255, 255, 255, 0.4) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(247, 199, 187, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(247, 199, 187, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    animation: fadeInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.summary-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #F7C7BB 0%, #175C64 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(247, 199, 187, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: iconFloat 3s ease-in-out infinite;
+}
+
+.summary-icon svg {
+    color: white;
+    -webkit-text-fill-color: white !important;
+}
+
+.summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.summary-label {
+    font-size: 0.9rem;
+    color: rgba(14, 58, 64, 0.7);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.summary-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #175C64 0%, #F7C7BB 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.period-label {
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(247, 199, 187, 0.3);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(14, 58, 64, 0.75);
+    box-shadow: 0 2px 8px rgba(247, 199, 187, 0.1);
+}
+
+/* Projects Chart Container */
+.projects-chart-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.chart-subtitle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: rgba(14, 58, 64, 0.85);
+    margin: 0;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(247, 199, 187, 0.2);
+}
+
+.chart-subtitle svg {
+    color: rgba(247, 199, 187, 0.8);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .advanced-stats-card .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .advanced-filters {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        width: 100%;
+    }
+    
+    .mini-filter {
+        width: 100%;
+    }
+    
+    .period-summary {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+    }
+    
+    .summary-item {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+/* Animation */
+@keyframes iconFloat {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-5px) rotate(2deg);
+    }
+}
