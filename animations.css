@@ -330,73 +330,82 @@
 
 /* ========== CLASSES UTILITAIRES ========== */
 
-/* Animations d'entrée */
+/* Animations d'entrée - DÉSACTIVÉES pour performance */
 .animate-fade-in {
-    animation: fadeIn 0.6s ease-out forwards;
+    /* animation: fadeIn 0.6s ease-out forwards; */
+    opacity: 1;
 }
 
 .animate-fade-in-up {
-    animation: fadeInUp 0.6s ease-out forwards;
+    /* animation: fadeInUp 0.6s ease-out forwards; */
+    opacity: 1;
 }
 
 .animate-fade-in-down {
-    animation: fadeInDown 0.6s ease-out forwards;
+    /* animation: fadeInDown 0.6s ease-out forwards; */
+    opacity: 1;
 }
 
 .animate-fade-in-left {
-    animation: fadeInLeft 0.6s ease-out forwards;
+    /* animation: fadeInLeft 0.6s ease-out forwards; */
+    opacity: 1;
 }
 
 .animate-fade-in-right {
-    animation: fadeInRight 0.6s ease-out forwards;
+    /* animation: fadeInRight 0.6s ease-out forwards; */
+    opacity: 1;
 }
 
 .animate-scale-in {
-    animation: scaleIn 0.4s ease-out forwards;
+    /* animation: scaleIn 0.4s ease-out forwards; */
+    opacity: 1;
 }
 
 .animate-bounce-in {
-    animation: bounceIn 0.6s ease-out forwards;
+    /* animation: bounceIn 0.6s ease-out forwards; */
+    opacity: 1;
 }
 
 .animate-slide-in-up {
-    animation: slideInUp 0.5s ease-out forwards;
+    /* animation: slideInUp 0.5s ease-out forwards; */
+    opacity: 1;
 }
 
 .animate-slide-in-down {
-    animation: slideInDown 0.5s ease-out forwards;
+    /* animation: slideInDown 0.5s ease-out forwards; */
+    opacity: 1;
 }
 
-/* Animations continues */
+/* Animations continues - DÉSACTIVÉES pour performance */
 .animate-pulse {
-    animation: pulse 2s ease-in-out infinite;
+    /* animation: pulse 2s ease-in-out infinite; */
 }
 
 .animate-glow {
-    animation: glow 2s ease-in-out infinite;
+    /* animation: glow 2s ease-in-out infinite; */
 }
 
 .animate-shimmer {
-    background: linear-gradient(
+    /* background: linear-gradient(
         90deg,
         rgba(247, 199, 187, 0.1) 0%,
         rgba(247, 199, 187, 0.3) 50%,
         rgba(247, 199, 187, 0.1) 100%
     );
     background-size: 1000px 100%;
-    animation: shimmer 2s infinite;
+    animation: shimmer 2s infinite; */
 }
 
 .animate-rotate {
-    animation: rotate 2s linear infinite;
+    /* animation: rotate 2s linear infinite; */
 }
 
 .animate-spin {
-    animation: spin 1s linear infinite;
+    /* animation: spin 1s linear infinite; */
 }
 
 .animate-float {
-    animation: floatingBackground 6s ease-in-out infinite;
+    /* animation: floatingBackground 6s ease-in-out infinite; */
 }
 
 /* Delays pour animations séquentielles */
@@ -605,14 +614,8 @@
 }
 
 .skeleton {
-    background: linear-gradient(
-        90deg,
-        #EEF2F2 0%,
-        #F7C7BB 50%,
-        #EEF2F2 100%
-    );
-    background-size: 200px 100%;
-    animation: skeletonLoading 1.5s ease-in-out infinite;
+    background: #EEF2F2;
+    /* animation: skeletonLoading 1.5s ease-in-out infinite; */
 }
 
 /* ========== ANIMATIONS DE SUCCÈS/ERREUR ========== */
