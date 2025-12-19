@@ -208,7 +208,7 @@ async function handleFormSubmit(e) {
     
     try {
         // Connexion avec Supabase
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        const { data: authData, error: authError } = await window.supabase.auth.signInWithPassword({
             email: email,
             password: password
         });
@@ -218,7 +218,7 @@ async function handleFormSubmit(e) {
         console.log('User authenticated:', authData.user.id);
 
         // Récupérer le profil utilisateur pour obtenir le rôle
-        const { data: profiles, error: profileError } = await supabase
+        const { data: profiles, error: profileError } = await window.supabase
             .from('user_profiles')
             .select('role')
             .eq('user_id', authData.user.id);
