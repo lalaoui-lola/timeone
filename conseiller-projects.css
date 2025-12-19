@@ -1,0 +1,246 @@
+/* Conseiller Project Cards - Enhanced Design */
+
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 2rem;
+    padding: 0.5rem;
+    animation: fadeIn 0.6s ease;
+}
+
+.project-card.conseiller-card {
+    position: relative;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(238, 242, 242, 0.95) 100%);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(247, 199, 187, 0.4);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(23, 92, 100, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    overflow: hidden;
+    animation: projectCardFadeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+@keyframes projectCardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.project-card.conseiller-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #10b981 0%, #059669 50%, #10b981 100%);
+    background-size: 200% 100%;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.project-card.conseiller-card:hover::before {
+    opacity: 1;
+    animation: shimmerGradient 2s ease infinite;
+}
+
+@keyframes shimmerGradient {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.project-card.conseiller-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.project-card.conseiller-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 16px 48px rgba(16, 185, 129, 0.2), 
+                0 0 0 1px rgba(16, 185, 129, 0.3),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+    border-color: rgba(16, 185, 129, 0.5);
+}
+
+.project-card.conseiller-card:hover::after {
+    opacity: 1;
+}
+
+.project-card.conseiller-card:active {
+    transform: translateY(-4px) scale(1.01);
+}
+
+/* Project Header */
+.project-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.project-icon {
+    width: 60px;
+    height: 60px;
+    min-width: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.project-card.conseiller-card:hover .project-icon {
+    transform: rotate(5deg) scale(1.1);
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.4);
+}
+
+.project-icon svg {
+    width: 32px;
+    height: 32px;
+    color: white;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.project-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #175C64 0%, #10b981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.3;
+    transition: all 0.3s ease;
+}
+
+.project-card.conseiller-card:hover .project-title {
+    transform: translateX(5px);
+}
+
+.project-description {
+    font-size: 0.95rem;
+    color: rgba(14, 58, 64, 0.7);
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Project Meta */
+.project-meta {
+    display: flex;
+    gap: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid rgba(247, 199, 187, 0.2);
+    position: relative;
+    z-index: 1;
+}
+
+.project-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(14, 58, 64, 0.8);
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(247, 199, 187, 0.3);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.project-card.conseiller-card:hover .project-meta span {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+    transform: translateY(-2px);
+}
+
+.project-meta svg {
+    width: 18px;
+    height: 18px;
+    color: #10b981;
+    flex-shrink: 0;
+}
+
+/* Badge for new projects */
+.project-badge {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    padding: 0.4rem 0.8rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    z-index: 2;
+}
+
+/* Stagger animation for cards */
+.project-card.conseiller-card:nth-child(1) { animation-delay: 0.1s; }
+.project-card.conseiller-card:nth-child(2) { animation-delay: 0.2s; }
+.project-card.conseiller-card:nth-child(3) { animation-delay: 0.3s; }
+.project-card.conseiller-card:nth-child(4) { animation-delay: 0.4s; }
+.project-card.conseiller-card:nth-child(5) { animation-delay: 0.5s; }
+.project-card.conseiller-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* Empty state */
+.projects-grid p {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: rgba(14, 58, 64, 0.5);
+    font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .projects-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .project-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .project-meta {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .project-meta span {
+        justify-content: center;
+    }
+}

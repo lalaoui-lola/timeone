@@ -62,6 +62,7 @@ document.querySelectorAll('.nav-item').forEach(button => {
             loadProjects();
         } else if (tab === 'leads') {
             loadLeads();
+            loadAgentKPIs();
         }
     });
 });
@@ -540,6 +541,133 @@ async function init() {
     loadProjectsFilter();
     setupFilters();
     await loadLeads(); // Charger les leads au démarrage
+}
+
+// ========== AGENT KPIs ==========
+
+async function loadAgentKPIs() {
+    try {
+        // Charger tous les leads de l'agent
+        const { data: leads, error } = await supabase
+            .from('project_responses')
+            .select('*, projects(name)')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Calculer les statistiques
+        const totalLeads = leads.length;
+        const leadsOK = leads.filter(l => l.conseiller_status === 'OK').length;
+        const leadsRappeler = leads.filter(l => l.conseiller_status === 'Rappeler').length;
+        const leadsNonOK = leads.filter(l => l.conseiller_status === 'No OK').length;
+        
+        // Leads du mois en cours
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const leadsThisMonth = leads.filter(l => new Date(l.created_at) >= startOfMonth).length;
+        
+        // Leads de la semaine en cours
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Lundi
+        startOfWeek.setHours(0, 0, 0, 0);
+        const leadsThisWeek = leads.filter(l => new Date(l.created_at) >= startOfWeek).length;
+        
+        // Taux OK
+        const tauxOK = totalLeads > 0 ? ((leadsOK / totalLeads) * 100).toFixed(1) : '0.0';
+        
+        // Créer les cartes KPI
+        const kpiGrid = document.getElementById('agentKpiGrid');
+        kpiGrid.innerHTML = '';
+        
+        const kpis = [
+            {
+                label: 'Total Leads',
+                value: totalLeads,
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>`,
+                color: 'blue'
+            },
+            {
+                label: 'Leads OK',
+                value: leadsOK,
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>`,
+                color: 'green'
+            },
+            {
+                label: 'À Rappeler',
+                value: leadsRappeler,
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>`,
+                color: 'orange'
+            },
+            {
+                label: 'Non OK',
+                value: leadsNonOK,
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>`,
+                color: 'red'
+            },
+            {
+                label: 'Taux OK',
+                value: tauxOK + '%',
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>`,
+                color: 'purple'
+            },
+            {
+                label: 'Mois en cours',
+                value: leadsThisMonth,
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>`,
+                color: 'cyan'
+            },
+            {
+                label: 'Semaine en cours',
+                value: leadsThisWeek,
+                icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>`,
+                color: 'pink'
+            }
+        ];
+        
+        kpis.forEach(kpi => {
+            const card = document.createElement('div');
+            card.className = `agent-kpi-card ${kpi.color}`;
+            card.innerHTML = `
+                <div class="agent-kpi-header">
+                    <div class="agent-kpi-icon">
+                        ${kpi.icon}
+                    </div>
+                    <div class="agent-kpi-label">${kpi.label}</div>
+                </div>
+                <h3 class="agent-kpi-value">${kpi.value}</h3>
+            `;
+            kpiGrid.appendChild(card);
+        });
+        
+    } catch (error) {
+        console.error('Erreur chargement KPIs:', error);
+    }
 }
 
 // Démarrer l'initialisation quand la page est chargée

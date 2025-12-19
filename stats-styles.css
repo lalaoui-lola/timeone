@@ -12,8 +12,8 @@ body * {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
-    padding: 1.5rem;
+    margin-bottom: 1rem;
+    padding: 1rem 1.5rem;
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
@@ -98,8 +98,8 @@ body * {
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
 .kpi-card {
@@ -107,9 +107,9 @@ body * {
     backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
-    padding: 1.5rem;
+    padding: 1rem;
     display: flex;
-    gap: 1.5rem;
+    gap: 1rem;
     align-items: center;
     transition: all 0.3s ease;
     position: relative;
@@ -139,8 +139,8 @@ body * {
 }
 
 .kpi-icon {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -200,7 +200,7 @@ body * {
 }
 
 .kpi-value {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 700;
     margin: 0;
     color: var(--color-dark);
@@ -236,8 +236,8 @@ body * {
 .charts-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
 .chart-card {
@@ -245,7 +245,7 @@ body * {
     backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
-    padding: 1.5rem;
+    padding: 1rem;
     transition: all 0.3s ease;
 }
 
@@ -262,7 +262,7 @@ body * {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .chart-header h3 {
@@ -297,7 +297,84 @@ body * {
 
 .chart-container {
     position: relative;
-    height: 300px;
+    height: 250px;
+}
+
+/* Project Bars */
+.project-bar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.project-bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.project-bar-name {
+    font-weight: 600;
+    color: var(--color-dark);
+    font-size: 0.95rem;
+}
+
+.project-bar-count {
+    font-weight: 700;
+    color: var(--color-primary);
+    font-size: 1.1rem;
+    min-width: 40px;
+    text-align: right;
+}
+
+.project-bar-track {
+    height: 32px;
+    background: rgba(14, 58, 64, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.project-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(247, 199, 187, 0.8) 0%, rgba(247, 199, 187, 1) 100%);
+    border-radius: 8px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    box-shadow: 0 2px 8px rgba(247, 199, 187, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 0.75rem;
+}
+
+.project-bar-fill.empty {
+    background: linear-gradient(90deg, rgba(14, 58, 64, 0.15) 0%, rgba(14, 58, 64, 0.2) 100%);
+    box-shadow: none;
+}
+
+.project-bar-fill::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+    animation: shimmerBar 2s infinite;
+}
+
+.project-bar-fill.empty::before {
+    display: none;
+}
+
+@keyframes shimmerBar {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 /* Leaderboard */

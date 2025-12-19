@@ -241,10 +241,263 @@ document.getElementById('searchUsers').addEventListener('input', (e) => {
     });
 });
 
-// ========== GESTION DES PROJETS ==========
 
 let currentProjectId = null;
 let fieldCounter = 0;
+
+// ========== IMPORT EXCEL ==========
+
+let currentImportProjectId = null;
+let currentImportProjectFields = [];
+
+async function openImportExcelModal(projectId, projectName) {
+    currentImportProjectId = projectId;
+    
+    try {
+        // Charger les champs du projet
+        const { data: fields, error } = await supabase
+            .from('project_fields')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('created_at');
+        
+        if (error) {
+            console.error('Erreur chargement champs:', error);
+            alert('Erreur lors du chargement des champs du projet');
+            return;
+        }
+        
+        if (!fields || fields.length === 0) {
+            alert('Ce projet n\'a pas de champs configurés');
+            return;
+        }
+        
+        currentImportProjectFields = fields;
+        
+        // Afficher le format attendu
+        const formatDiv = document.getElementById('excelFormatColumns');
+        const columnNames = fields.map(f => f.name).join(' | ');
+        formatDiv.innerHTML = `<strong>${columnNames}</strong>`;
+        
+        document.getElementById('importExcelTitle').textContent = `Importer des leads - ${projectName}`;
+        document.getElementById('excelFileInput').value = '';
+        document.getElementById('fileInfo').textContent = '';
+        document.getElementById('importBtn').disabled = true;
+        document.getElementById('importProgress').style.display = 'none';
+        document.getElementById('importErrors').style.display = 'none';
+        
+        openModal('importExcelModal');
+    } catch (err) {
+        console.error('Erreur:', err);
+        alert('Erreur lors de l\'ouverture du modal d\'import');
+    }
+}
+
+// Télécharger le modèle Excel
+async function downloadExcelTemplate() {
+    if (!currentImportProjectFields || currentImportProjectFields.length === 0) {
+        alert('Aucun champ disponible pour ce projet');
+        return;
+    }
+    
+    // Charger la liste des agents
+    const { data: agents } = await supabase
+        .from('user_profiles')
+        .select('email')
+        .eq('role', 'agent')
+        .order('email');
+    
+    // Créer un workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Créer les en-têtes (Agent + noms des champs)
+    const headers = ['Agent (Email)', ...currentImportProjectFields.map(f => f.name)];
+    
+    // Créer une ligne d'exemple
+    const exampleRow = [
+        agents && agents.length > 0 ? agents[0].email : 'agent@exemple.com',
+        ...currentImportProjectFields.map(f => {
+            if (f.type === 'number') return '123';
+            if (f.type === 'email') return 'exemple@email.com';
+            if (f.type === 'tel') return '0612345678';
+            if (f.type === 'checkbox') return 'Oui';
+            return 'Exemple';
+        })
+    ];
+    
+    // Créer la feuille avec en-têtes et exemple
+    const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
+    
+    // Ajouter la feuille "Leads"
+    XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+    
+    // Créer une feuille "Liste des agents" pour référence
+    if (agents && agents.length > 0) {
+        const agentsSheet = XLSX.utils.aoa_to_sheet([
+            ['Email des agents disponibles'],
+            ...agents.map(a => [a.email])
+        ]);
+        XLSX.utils.book_append_sheet(wb, agentsSheet, 'Liste Agents');
+    }
+    
+    // Télécharger le fichier
+    XLSX.writeFile(wb, `modele_import_leads.xlsx`);
+}
+
+// Gérer la sélection du fichier (avec setTimeout pour s'assurer que le DOM est chargé)
+setTimeout(() => {
+    const fileInput = document.getElementById('excelFileInput');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('fileInfo').textContent = ` ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                document.getElementById('importBtn').disabled = false;
+            } else {
+                document.getElementById('fileInfo').textContent = '';
+                document.getElementById('importBtn').disabled = true;
+            }
+        });
+    }
+}, 500);
+
+async function processExcelImport() {
+    const fileInput = document.getElementById('excelFileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Veuillez sélectionner un fichier');
+        return;
+    }
+    
+    document.getElementById('importBtn').disabled = true;
+    document.getElementById('importProgress').style.display = 'block';
+    document.getElementById('importStatus').textContent = ' Lecture du fichier...';
+    document.getElementById('importErrors').style.display = 'none';
+    
+    try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet);
+        
+        if (rows.length === 0) {
+            throw new Error('Le fichier est vide');
+        }
+        
+        document.getElementById('importStatus').textContent = `📊 ${rows.length} lignes détectées. Validation...`;
+        
+        // Charger tous les agents pour mapper les emails aux user_id
+        const { data: allAgents } = await supabase
+            .from('user_profiles')
+            .select('user_id, email')
+            .eq('role', 'agent');
+        
+        const agentEmailMap = {};
+        allAgents?.forEach(agent => {
+            agentEmailMap[agent.email.toLowerCase()] = agent.user_id;
+        });
+        
+        // Valider et préparer les données
+        const errors = [];
+        const validLeads = [];
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const rowNum = i + 2; // +2 car ligne 1 = header, et index commence à 0
+            const responseData = {};
+            let hasError = false;
+            let agentUserId = null;
+            
+            // Récupérer l'email de l'agent
+            const agentEmail = row['Agent (Email)'];
+            if (!agentEmail || agentEmail.trim() === '') {
+                errors.push(`Ligne ${rowNum}: L'email de l'agent est obligatoire`);
+                hasError = true;
+            } else {
+                const emailLower = agentEmail.toLowerCase().trim();
+                agentUserId = agentEmailMap[emailLower];
+                if (!agentUserId) {
+                    errors.push(`Ligne ${rowNum}: Agent "${agentEmail}" non trouvé dans la base`);
+                    hasError = true;
+                }
+            }
+            
+            // Mapper chaque colonne aux champs du projet
+            for (const field of currentImportProjectFields) {
+                const value = row[field.name];
+                
+                // Vérifier les champs obligatoires
+                if (field.required && (value === undefined || value === null || value === '')) {
+                    errors.push(`Ligne ${rowNum}: Le champ "${field.name}" est obligatoire`);
+                    hasError = true;
+                    continue;
+                }
+                
+                // Convertir selon le type
+                if (value !== undefined && value !== null && value !== '') {
+                    if (field.type === 'number') {
+                        responseData[field.id] = Number(value);
+                    } else if (field.type === 'checkbox') {
+                        responseData[field.id] = Boolean(value);
+                    } else {
+                        responseData[field.id] = String(value);
+                    }
+                }
+            }
+            
+            if (!hasError) {
+                validLeads.push({ responseData, agentUserId });
+            }
+        }
+        
+        if (errors.length > 0) {
+            document.getElementById('importErrors').style.display = 'block';
+            document.getElementById('errorsList').innerHTML = errors.map(e => `<p style="margin: 0.25rem 0;">• ${e}</p>`).join('');
+            document.getElementById('importStatus').textContent = ` ${errors.length} erreur(s) détectée(s). ${validLeads.length} lead(s) valide(s).`;
+            
+            if (validLeads.length === 0) {
+                document.getElementById('importBtn').disabled = false;
+                return;
+            }
+        }
+        
+        // Importer les leads valides
+        document.getElementById('importStatus').textContent = `💾 Import de ${validLeads.length} lead(s)...`;
+        
+        const leadsToInsert = validLeads.map(lead => ({
+            project_id: currentImportProjectId,
+            user_id: lead.agentUserId,
+            response_data: lead.responseData,
+            status: 'pending',
+            created_at: new Date().toISOString()
+        }));
+        
+        const { error: insertError } = await supabase
+            .from('project_responses')
+            .insert(leadsToInsert);
+        
+        if (insertError) throw insertError;
+        
+        document.getElementById('importStatus').textContent = `✅ ${validLeads.length} lead(s) importé(s) avec succès !`;
+        
+        setTimeout(() => {
+            closeModal('importExcelModal');
+            reloadLeadsWithFilters();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Erreur import:', error);
+        document.getElementById('importErrors').style.display = 'block';
+        document.getElementById('errorsList').innerHTML = `<p style="color: #ef4444; margin: 0;"> ${error.message}</p>`;
+        document.getElementById('importStatus').textContent = ' Erreur lors de l\'import';
+        document.getElementById('importBtn').disabled = false;
+    }
+}
+
+// Charger les données au démarrage
+loadProjects();
+loadAllLeads();
 
 // Charger les projets
 async function loadProjects() {
@@ -283,6 +536,14 @@ async function loadProjects() {
                 <span>📅 ${new Date(project.created_at).toLocaleDateString('fr-FR')}</span>
             </div>
             <div class="project-actions">
+                <button class="btn-import" onclick="openImportExcelModal('${project.id}', '${project.name}')" title="Importer des leads depuis Excel">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Import Excel
+                </button>
                 <button class="btn-edit" onclick="editProject('${project.id}')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -836,9 +1097,24 @@ async function validateLead(leadId, newStatus) {
         
         if (error) throw error;
         
-        loadAllLeads();
+        reloadLeadsWithFilters();
     } catch (error) {
         alert('Erreur lors de la validation: ' + error.message);
+    }
+}
+
+// Helper function to reload leads while preserving filters
+function reloadLeadsWithFilters() {
+    const searchTerm = document.getElementById('searchLeads')?.value || '';
+    const projectId = document.getElementById('filterProject')?.value || '';
+    const agentId = document.getElementById('filterAgent')?.value || '';
+    const dateFilter = document.getElementById('filterDate')?.value || '';
+    
+    // If any filter is active, apply filters; otherwise load all leads
+    if (searchTerm || projectId || agentId || dateFilter) {
+        applyFilters();
+    } else {
+        loadAllLeads();
     }
 }
 
@@ -926,7 +1202,7 @@ function displayFilteredLeads(leads) {
     tbody.innerHTML = '';
     
     if (!leadsWithDetails || leadsWithDetails.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead trouvé</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Aucun lead trouvé</td></tr>';
         return;
     }
     
@@ -940,6 +1216,32 @@ function displayFilteredLeads(leads) {
         };
         
         const statusInfo = statusConfig[status] || statusConfig.pending;
+        
+        // Avis conseiller
+        const conseillerStatus = lead.conseiller_status;
+        const conseillerComment = lead.conseiller_comment;
+        
+        const conseillerStatusConfig = {
+            'OK': { label: '✅ OK', color: '#10b981' },
+            'Rappeler': { label: '📞 Rappeler', color: '#f59e0b' },
+            'No OK': { label: '❌ No OK', color: '#ef4444' }
+        };
+        
+        let conseillerAvis = '';
+        if (conseillerStatus) {
+            const statusInf = conseillerStatusConfig[conseillerStatus];
+            const rgb = statusInf.color === '#10b981' ? '16, 185, 129' : statusInf.color === '#ef4444' ? '239, 68, 68' : '245, 158, 11';
+            conseillerAvis = `
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <span class="role-badge" style="background: rgba(${rgb}, 0.1); border-color: ${statusInf.color}; color: ${statusInf.color}; display: inline-block; width: fit-content;">
+                        ${statusInf.label}
+                    </span>
+                    ${conseillerComment ? `<div style="color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.4; max-width: 250px;">${conseillerComment.substring(0, 80)}${conseillerComment.length > 80 ? '...' : ''}</div>` : ''}
+                </div>
+            `;
+        } else {
+            conseillerAvis = '<span style="color: rgba(255,255,255,0.4); font-style: italic; font-size: 0.9rem;">Non traité</span>';
+        }
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -968,6 +1270,7 @@ function displayFilteredLeads(leads) {
                     </button>
                 `}
             </td>
+            <td>${conseillerAvis}</td>
             <td>
                 <div class="action-buttons">
                     ${status === 'pending' ? `
@@ -1048,7 +1351,7 @@ function uploadAudio(leadId) {
                 if (updateError) throw updateError;
                 
                 alert('Fichier audio ajouté avec succès!');
-                loadAllLeads();
+                reloadLeadsWithFilters();
                 
             } catch (error) {
                 console.error('Erreur upload audio:', error);
@@ -1071,7 +1374,7 @@ async function removeAudio(leadId) {
         
         if (error) throw error;
         
-        loadAllLeads();
+        reloadLeadsWithFilters();
     } catch (error) {
         console.error('Erreur suppression audio:', error);
         alert('Erreur: ' + error.message);
@@ -1092,24 +1395,254 @@ async function deleteLead(leadId) {
         
         if (error) throw error;
         
-        loadAllLeads();
+        reloadLeadsWithFilters();
     } catch (error) {
         alert('Erreur lors de la suppression: ' + error.message);
     }
 }
 
-// Recherche de leads
+// Recherche de leads - utilise applyFilters pour préserver tous les filtres
 if (document.getElementById('searchLeads')) {
     document.getElementById('searchLeads').addEventListener('input', (e) => {
-        const search = e.target.value.toLowerCase();
-        const rows = document.querySelectorAll('#leadsTableBody tr');
-        
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(search) ? '' : 'none';
-        });
+        // Use applyFilters to ensure all filters work together
+        reloadLeadsWithFilters();
     });
 }
+
+// ========== AJOUT DE LEAD PAR L'ADMIN ==========
+
+// Ouvrir le modal d'ajout de lead
+document.getElementById('addLeadBtn').addEventListener('click', async () => {
+    await openAddLeadModal();
+});
+
+// Ouvrir le modal et charger les données
+async function openAddLeadModal() {
+    try {
+        // Charger les projets
+        const { data: projects, error: projectsError } = await supabase
+            .from('projects')
+            .select('id, name')
+            .order('name', { ascending: true });
+        
+        if (projectsError) throw projectsError;
+        
+        // Charger les agents
+        const { data: agents, error: agentsError } = await supabase
+            .from('user_profiles')
+            .select('user_id, email, role')
+            .eq('role', 'agent')
+            .order('email', { ascending: true });
+        
+        if (agentsError) throw agentsError;
+        
+        // Remplir le select des projets
+        const projectSelect = document.getElementById('leadProjectSelect');
+        projectSelect.innerHTML = '<option value="">Sélectionnez un projet</option>';
+        projects.forEach(project => {
+            projectSelect.innerHTML += `<option value="${project.id}">${project.name}</option>`;
+        });
+        
+        // Remplir le select des agents
+        const agentSelect = document.getElementById('leadAgentSelect');
+        agentSelect.innerHTML = '<option value="">Sélectionnez un agent</option>';
+        agents.forEach(agent => {
+            agentSelect.innerHTML += `<option value="${agent.user_id}">${agent.email}</option>`;
+        });
+        
+        // Réinitialiser les champs dynamiques
+        document.getElementById('leadDynamicFields').innerHTML = '';
+        
+        openModal('addLeadModal');
+        
+    } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+        alert('Erreur lors du chargement des données: ' + error.message);
+    }
+}
+
+// Charger les champs du projet sélectionné
+document.getElementById('leadProjectSelect').addEventListener('change', async (e) => {
+    const projectId = e.target.value;
+    const dynamicFieldsContainer = document.getElementById('leadDynamicFields');
+    
+    if (!projectId) {
+        dynamicFieldsContainer.innerHTML = '';
+        return;
+    }
+    
+    try {
+        // Charger les champs du projet
+        const { data: fields, error } = await supabase
+            .from('project_fields')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('order', { ascending: true });
+        
+        if (error) throw error;
+        
+        // Générer les champs dynamiques
+        dynamicFieldsContainer.innerHTML = '<h4 style="color: var(--color-primary); margin-bottom: 1rem;">Informations du lead</h4>';
+        
+        fields.forEach(field => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'form-group';
+            
+            let fieldHTML = `<label>${field.name}${field.required ? ' *' : ''}</label>`;
+            
+            switch (field.type) {
+                case 'text':
+                case 'email':
+                case 'number':
+                case 'date':
+                case 'time':
+                case 'datetime':
+                    fieldHTML += `<input type="${field.type}" name="field_${field.id}" ${field.required ? 'required' : ''} placeholder="${field.name}">`;
+                    break;
+                    
+                case 'textarea':
+                    fieldHTML += `<textarea name="field_${field.id}" rows="4" ${field.required ? 'required' : ''} placeholder="${field.name}"></textarea>`;
+                    break;
+                    
+                case 'select':
+                    fieldHTML += `<select name="field_${field.id}" ${field.required ? 'required' : ''}>`;
+                    fieldHTML += `<option value="">Sélectionnez une option</option>`;
+                    if (field.options) {
+                        field.options.forEach(option => {
+                            fieldHTML += `<option value="${option}">${option}</option>`;
+                        });
+                    }
+                    fieldHTML += `</select>`;
+                    break;
+                    
+                case 'radio':
+                    if (field.options) {
+                        field.options.forEach((option, index) => {
+                            fieldHTML += `
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <input type="radio" name="field_${field.id}" value="${option}" id="field_${field.id}_${index}" ${field.required && index === 0 ? 'required' : ''}>
+                                    <label for="field_${field.id}_${index}" style="margin: 0; cursor: pointer;">${option}</label>
+                                </div>
+                            `;
+                        });
+                    }
+                    break;
+                    
+                case 'checkbox':
+                    fieldHTML += `
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <input type="checkbox" name="field_${field.id}" id="field_${field.id}" ${field.required ? 'required' : ''}>
+                            <label for="field_${field.id}" style="margin: 0; cursor: pointer;">${field.name}</label>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'checkboxes':
+                    if (field.options) {
+                        field.options.forEach((option, index) => {
+                            fieldHTML += `
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <input type="checkbox" name="field_${field.id}[]" value="${option}" id="field_${field.id}_${index}">
+                                    <label for="field_${field.id}_${index}" style="margin: 0; cursor: pointer;">${option}</label>
+                                </div>
+                            `;
+                        });
+                    }
+                    break;
+                    
+                case 'file':
+                    fieldHTML += `<input type="file" name="field_${field.id}" ${field.required ? 'required' : ''}>`;
+                    break;
+            }
+            
+            fieldDiv.innerHTML = fieldHTML;
+            dynamicFieldsContainer.appendChild(fieldDiv);
+        });
+        
+    } catch (error) {
+        console.error('Erreur lors du chargement des champs:', error);
+        alert('Erreur lors du chargement des champs: ' + error.message);
+    }
+});
+
+// Soumettre le formulaire d'ajout de lead
+document.getElementById('addLeadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const projectId = document.getElementById('leadProjectSelect').value;
+    const agentId = document.getElementById('leadAgentSelect').value;
+    const messageDiv = document.getElementById('addLeadMessage');
+    
+    if (!projectId || !agentId) {
+        alert('Veuillez sélectionner un projet et un agent');
+        return;
+    }
+    
+    messageDiv.style.display = 'block';
+    messageDiv.className = 'message';
+    messageDiv.textContent = 'Création du lead en cours...';
+    
+    try {
+        // Récupérer les champs du projet
+        const { data: fields, error: fieldsError } = await supabase
+            .from('project_fields')
+            .select('*')
+            .eq('project_id', projectId);
+        
+        if (fieldsError) throw fieldsError;
+        
+        // Construire l'objet response_data
+        const responseData = {};
+        const formData = new FormData(e.target);
+        
+        fields.forEach(field => {
+            const fieldName = `field_${field.id}`;
+            
+            if (field.type === 'checkboxes') {
+                // Pour les checkboxes multiples
+                const values = formData.getAll(`${fieldName}[]`);
+                responseData[field.id] = values;
+            } else if (field.type === 'checkbox') {
+                // Pour une checkbox unique
+                responseData[field.id] = formData.has(fieldName);
+            } else if (field.type === 'file') {
+                // Pour les fichiers, on stocke juste le nom (ou on pourrait uploader)
+                const file = formData.get(fieldName);
+                responseData[field.id] = file ? file.name : null;
+            } else {
+                // Pour tous les autres types
+                responseData[field.id] = formData.get(fieldName);
+            }
+        });
+        
+        // Créer le lead
+        const { data: newLead, error: insertError } = await supabase
+            .from('project_responses')
+            .insert([{
+                project_id: projectId,
+                user_id: agentId,
+                response_data: responseData,
+                status: 'pending'
+            }])
+            .select()
+            .single();
+        
+        if (insertError) throw insertError;
+        
+        messageDiv.className = 'message success';
+        messageDiv.textContent = 'Lead créé avec succès!';
+        
+        setTimeout(() => {
+            closeModal('addLeadModal');
+            reloadLeadsWithFilters();
+        }, 1500);
+        
+    } catch (error) {
+        messageDiv.className = 'message error';
+        messageDiv.textContent = 'Erreur: ' + error.message;
+        console.error('Erreur lors de la création du lead:', error);
+    }
+});
 
 // Initialisation
 checkAuth();

@@ -83,6 +83,17 @@ CREATE POLICY "Users can update their own responses" ON project_responses
     FOR UPDATE
     USING (auth.uid() = user_id);
 
+CREATE POLICY "Admins can update responses" ON project_responses
+    FOR UPDATE
+    USING (EXISTS (
+        SELECT 1 FROM user_profiles 
+        WHERE user_id = auth.uid() AND role = 'admin'
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM user_profiles 
+        WHERE user_id = auth.uid() AND role = 'admin'
+    ));
+
 CREATE POLICY "Admins can delete responses" ON project_responses
     FOR DELETE
     USING (EXISTS (

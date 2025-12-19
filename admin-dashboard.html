@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - TimeOne</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>">
+    <link rel="stylesheet" href="animations.css">
     <link rel="stylesheet" href="admin-styles.css">
     <link rel="stylesheet" href="lead-modal.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -155,7 +156,17 @@
                         <h2>Tous les Leads</h2>
                         <p>Gérez tous les leads de vos agents</p>
                     </div>
+                    
+                    <button class="btn-primary" id="addLeadBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Ajouter un lead
+                    </button>
+                </div>
 
+                <div class="content-actions">
                     <div class="filters-modern">
                         <div class="filter-line">
                             <div class="filter-item">
@@ -525,6 +536,110 @@ curl -X GET "https://votre-domaine.com/api/leads" \\
         </div>
     </div>
 
+    <!-- Modal: Add Lead -->
+    <div class="modal" id="addLeadModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Ajouter un nouveau lead</h3>
+                <button class="modal-close" onclick="closeModal('addLeadModal')">&times;</button>
+            </div>
+            <form id="addLeadForm">
+                <div class="form-group">
+                    <label>Projet *</label>
+                    <select id="leadProjectSelect" required>
+                        <option value="">Sélectionnez un projet</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Assigner à l'agent *</label>
+                    <select id="leadAgentSelect" required>
+                        <option value="">Sélectionnez un agent</option>
+                    </select>
+                </div>
+                
+                <div id="leadDynamicFields" style="margin-top: 1.5rem;">
+                    <!-- Les champs dynamiques du projet apparaîtront ici -->
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('addLeadModal')">Annuler</button>
+                    <button type="submit" class="btn-primary">Créer le lead</button>
+                </div>
+            </form>
+            <div id="addLeadMessage" class="message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Modal Import Excel -->
+    <div class="modal" id="importExcelModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 id="importExcelTitle">Importer des leads Excel</h2>
+                <button class="modal-close" onclick="closeModal('importExcelModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-box" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h3 style="color: #3b82f6; margin: 0; font-size: 1rem;">📋 Format du fichier Excel</h3>
+                        <button onclick="downloadExcelTemplate()" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.3rem;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Télécharger le modèle
+                        </button>
+                    </div>
+                    <p style="margin: 0 0 0.75rem 0; color: rgba(14, 58, 64, 0.7); font-size: 0.9rem;">
+                        Votre fichier Excel doit contenir les colonnes suivantes :
+                    </p>
+                    <div id="excelFormatColumns" style="background: rgba(255, 255, 255, 0.5); padding: 0.75rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem;">
+                        <!-- Les colonnes seront chargées dynamiquement -->
+                    </div>
+                    <p style="margin: 0.75rem 0 0 0; color: rgba(14, 58, 64, 0.6); font-size: 0.85rem;">
+                        💡 <strong>Astuce :</strong> Téléchargez le modèle ci-dessus pour avoir un fichier pré-formaté avec une ligne d'exemple.<br>
+                        👤 <strong>Important :</strong> La colonne "Agent (Email)" est obligatoire. Chaque lead sera attribué à l'agent dont l'email est indiqué.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--color-secondary);">
+                        📁 Sélectionner le fichier Excel (.xlsx, .xls, .csv)
+                    </label>
+                    <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" 
+                           style="width: 100%; padding: 1rem; border: 2px dashed rgba(247, 199, 187, 0.5); border-radius: 12px; background: rgba(255, 248, 236, 0.5); cursor: pointer; transition: all 0.3s;">
+                    <p id="fileInfo" style="margin-top: 0.5rem; font-size: 0.85rem; color: rgba(14, 58, 64, 0.6);"></p>
+                </div>
+
+                <div id="importProgress" style="display: none; margin-top: 1rem;">
+                    <div style="background: rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 1rem;">
+                        <p id="importStatus" style="margin: 0; color: #10b981; font-weight: 600;"></p>
+                    </div>
+                </div>
+
+                <div id="importErrors" style="display: none; margin-top: 1rem;">
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 1rem;">
+                        <h4 style="color: #ef4444; margin: 0 0 0.5rem 0;">⚠️ Erreurs détectées</h4>
+                        <div id="errorsList" style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('importExcelModal')">Annuler</button>
+                <button class="btn-primary" onclick="processExcelImport()" id="importBtn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Importer les leads
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="supabase-config.js"></script>
     <script src="lead-modal.js"></script>
     <script src="admin-new.js"></script>
